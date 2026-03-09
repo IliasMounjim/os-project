@@ -23,6 +23,7 @@ int main(int argc, char **args)
     if(argc == 2 && (arg[1] == "help" || arg[1] == "h"))
     {
         std::cout << usageOut << std::endl;
+        std::cout << "schedulerSim help <COMMAND>\nstrategy - strategy from list: fcfs, ...\nlength - length of jobs\nnumber - number of jobs\njson - json filepath for job set" << std::endl;
         
         return 0;
     }
