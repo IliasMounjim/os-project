@@ -1,5 +1,5 @@
 # A Fairly Simple OS Class Project
-*** To Build
+### To Build
 cmake -B build
 cmake --build build
 
