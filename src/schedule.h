@@ -4,18 +4,22 @@
 namespace local {
     class Job
     {
-        int arrival; //arrival time
-        int length;  //job length
+        private:
+            int arrival; //arrival time
+            int length;  //job length
+            int id;
     
         public:
-            Job(int arrival, int length)
+            Job(int arrival, int length, int id)
                 : arrival(arrival)
                 , length(length)
+                , id(id)
             {}
 
-            std::string jobString() {return "Arrival time: " + std::to_string(arrival) + "\nJob length: " + std::to_string(length) + "\n\0";}
-            int getArrival() {return arrival;}
-            int getLength() {return length;}
+            std::string jobString() { return "ID: " + std::to_string(id) + "\n" + "Arrival time: " + std::to_string(arrival) + "\nJob length: " + std::to_string(length) + "\n\0"; }
+            int getArrival() { return arrival; }
+            int getLength() { return length; }
+            int getID() { return id; }
     };
     
     class Schedule

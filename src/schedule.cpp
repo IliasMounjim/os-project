@@ -4,17 +4,19 @@
 #include <vector>
 #include "schedule.h"
 
-void fromInput(std::vector<local::Job> schedule, std::vector<local::Job>::iterator it, int length, int number)
+using namespace local;
+
+void fromInput(std::vector<Job> schedule, std::vector<Job>::iterator it, int length, int number)
 {
     it = schedule.begin();
    
-    for(int location = 0; location < number; location++)
+    for(int id = 0; id < number; id++)
     {
-        it = schedule.insert(it, local::Job(0, length));
+        it = schedule.insert(it, Job(0, length, id));
     }
 }
 
-int fromJson(std::vector<local::Job> schedule, std::vector<local::Job>::iterator it, std::string filepath) //return 0 on file read, 1 on failed read
+int fromJson(std::vector<Job> schedule, std::vector<Job>::iterator it, std::string filepath) //return 0 on file read, 1 on failed read
 { //TODO: FINISH JSON INPUT
     it = schedule.begin();
     
@@ -31,11 +33,10 @@ int fromJson(std::vector<local::Job> schedule, std::vector<local::Job>::iterator
     return 1;
 }
 
-void printSchedule(std::vector<local::Job> schedule)
+void printSchedule(std::vector<Job> schedule)
 {
     for(auto j : schedule)
     {
         std::cout << j.jobString();
     }
 }
-

@@ -1,9 +1,13 @@
-#include "schedule.h"
+#include <string>
+#include "strategy.h"
+
+using namespace local;
 
 namespace local {
     namespace strategy {
-        namespace FCFS {
-            extern void runJobs(Schedule s);
+        namespace FCFS
+        {
+            extern Strategy evaluate(Schedule s);
         }
     }
 }
