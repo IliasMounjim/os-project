@@ -1,12 +1,21 @@
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
+#include <iterator>
 #include <ostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include "strategy.h"
+#include "policy.h"
 
 using namespace local;
+
+// EXIT CODES
+// 0 - standard exit, might still have issues, but it got to a valid end
+// 1 - invalid input
+// 2 - you shouldn't have got here
 
 bool isNumber(std::string s)
 {
@@ -18,78 +27,197 @@ bool isNumber(std::string s)
     return true;
 }
 
+int intUserInput(std::string s)
+{
+    int temp;
+
+    try {
+        temp = std::stoi(s);
+    } catch (std::invalid_argument) {
+        std::cout << "invalid arguement, not a number" << std::endl;
+        std::exit(1);
+    } catch (std::out_of_range) {
+        std::cout << "invalid arguement, number too big" << std::endl;
+        std::exit(1);
+    }
+
+    return temp;
+}
+
+void helpArg()
+{
+    std::cout << "schedulerSim <FLAGS>" << std::endl;
+    std::cout << "-h, prints this help message" << std::endl;
+    std::cout << "-p POLICY, select the policy evaluated from the following list, not optional, FCFS, LJF, SJF, SRTF, RR, LOTTERY, HYBRID" << std::endl;
+    std::cout << "-q NUMBER, the time quantum, put in a valid int, defaults to 10" << std::endl;
+    std::cout << "-l NUMBER, the length of the uniform job set, put in valid int, doesn't default" << std::endl;
+    std::cout << "-i NUMBER, percentIO for jobs, uniform workload" << std::endl;
+    std::cout << "-n NUMBER, the number of uniform/random jobs, put in valid int, doesn't default" << std::endl;
+    std::cout << "-j FILEPATH, json job input filepath, not yet implemented" << std::endl;
+    std::cout << "-r SEED, seed not needed, random job workload, not yet implemented\n" << std::endl;
+    
+    std::cout << "minimum required input" << std::endl;
+    std::cout << "schedulerSim, returns the help string" << std::endl;
+    std::cout << "schedulerSim -h, return teh help string" << std::endl;
+    std::cout << "schedulerSim -p POLICY -r NUMBER -n NUMBER, random workload" << std::endl;
+    std::cout << "schedulerSim -p POLICY -l NUMBER -n NUMBER, uniform workload" << std::endl;
+    std::cout << "schedulerSim -p POLICY -j FILEPATH, designed workloads" << std::endl;
+
+    exit(0);
+}
+
 int main(int argc, char **args)
 {
     std::vector<std::string> arg;
-    std::string strategies[] = {"FCFS", "LJF", "SJF", "SRTF", "RR", "LOTTERY", "HYBRID"};
-    std::string usageOut = "Improper use, valid forms as follows\n"
-        "schedulerSim strategy length number <FLAGS>\n"
-        "schedulerSim strategy json <FLAGS>\n"
-        "schedulerSim help <COMMAND>";
+    std::string policies[] = {"FCFS", "LJF", "SJF", "SRTF", "RR", "LOTTERY", "HYBRID"};
 
-    for(int i = 0; i < argc; i++)
+    for(int i = 0; i < argc; i++) //all arguements into strings
     {
         arg.push_back(args[i]);
     }
 
-    for(auto a: arg)
+    std::vector<std::string>::iterator policyFlag = std::find(arg.begin(), arg.end(), "-p");
+    std::vector<std::string>::iterator quantumFlag = std::find(arg.begin(), arg.end(), "-q");
+    std::vector<std::string>::iterator randomFlag = std::find(arg.begin(), arg.end(), "-r");
+    std::vector<std::string>::iterator numberFlag = std::find(arg.begin(), arg.end(), "-n");
+    std::vector<std::string>::iterator lengthFlag = std::find(arg.begin(), arg.end(), "-l");
+    std::vector<std::string>::iterator ioFlag = std::find(arg.begin(), arg.end(), "-i");
+    std::vector<std::string>::iterator jsonFlag = std::find(arg.begin(), arg.end(), "-j");
+    std::vector<std::string>::iterator helpFlag = std::find(arg.begin(), arg.end(), "-h");
+
+    bool isRandom = false;
+    std::string policyName;
+    std::string filePath;
+    int quantum = 10;
+    int length = 0;
+    int number = 0;
+    int percentIO = 0;
+    int seed = (int) time(NULL);
+
+    if(helpFlag != arg.end()) //is there help flag
     {
-        std::cout << a << std::endl;
+        helpArg();
+        return 0;
     }
     
-    if(argc == 2 && arg[1] == "help")
-    { //help
-        std::cout << usageOut << std::endl;
-        
-        return 0;
-    }
-    if(argc == 3 && arg[1] == "help" && arg[2] == "help")
-    { //help help
-        std::cout << "schedulerSim help <COMMAND>\n"
-            "strategy - strategy from list: fcfs, ...\n"
-            "length - length of jobs\n"
-            "number - number of jobs\n"
-            "json - json filepath for job set\n"
-            "flags - optional\n"
-            "   -q <INT>, time quantum"
-            << std::endl;
-
-        return 0;
-    }
-    if(argc >= 3 && std::find(std::begin(strategies), end(strategies), arg[1]))
+    if(policyFlag != arg.end() && (policyFlag+1) != arg.end()) //is there policy flag
     {
-        if(argc == 3)
+        if(std::find(std::begin(policies), std::end(policies), *(policyFlag+1)) != std::end(policies)) //do we have a valid policy 
         {
-            std::cout << "JSON not yet implemented" << std::endl;
-            return 0;
+            policyName = *(policyFlag+1);
         }
-        else if(argc == 4) // no flag length number OR JSON broken flag
+        else //if invalid policy quit
         {
-            if(isNumber(arg[2]) && isNumber(arg[3]))
-            {
-                strategy::Strategy strat = strategy::Strategy(arg[1], strategy::Trace(), 0);
-                Schedule sched = Schedule(std::stoi(arg[2]), std::stoi(arg[3]));
-                strat.evaluate(strat, sched);
-            }
-            else
-            {
-                std::cout << "JSON not yet implemented, -q needs a number after" << std::endl;
-                return 0;
-            }
+            std::cout << "invalid policy" << std::endl;
+            return 1;
         }
-        else if (argc == 5) 
-        {
-            
-        }
-        else if (argc == 6) 
-        {
+    }
+    else //if no policy quit
+    {
+        std::cout << "use -p POLICY to input a policy, this is nessecary" << std::endl;
+        return 1;
+    }
 
+    if(jsonFlag != arg.end()) //do we have a valid json
+    {
+        if(((jsonFlag+1) != policyFlag || (jsonFlag+1) != quantumFlag || (jsonFlag+1) != numberFlag || (jsonFlag+1) != lengthFlag || 
+                (jsonFlag+1) != randomFlag || (jsonFlag+1) != helpFlag) && (jsonFlag+1) != arg.end()) //do we ahve valid input
+        {
+            filePath = *(jsonFlag+1);
         }
+        else
+        {
+            std::cout << "invalid json filepath input" << std::endl;
+            return 1;
+        }
+    }
+
+    if(lengthFlag != arg.end()) //do we have the flag
+    {
+        if(isNumber(*(lengthFlag+1)) && (lengthFlag+1) != arg.end()) //does it have valid input
+        {
+            length = intUserInput(*(lengthFlag+1));
+        }
+        else
+        {
+            int a;
+            return 1;
+        }
+    }
+    
+    if(numberFlag != arg.end()) //do we have the flag
+    {
+        if(isNumber(*(numberFlag+1)) && (numberFlag+1) != arg.end()) //does it have valid input
+        {
+            number = intUserInput(*(numberFlag+1));
+        }
+        else
+        {
+            int a;
+            return 1;
+        }
+    }
+
+    if(quantumFlag != arg.end()) //do we have a valid quantum flag
+    {
+        if((quantumFlag+1) != arg.end()) //valid quantum
+        {
+            quantum = intUserInput(*(quantumFlag+1));
+        }
+        else //invalid quantum
+        {
+            std::cout << "invalid quantum flag use" << std::endl;
+            return 1;
+        }
+    }
+
+    if(ioFlag != arg.end())
+    {
+        if((ioFlag+1) != arg.end()) //valid io input
+        {
+            percentIO = intUserInput(*(ioFlag+1));
+        }
+        else //invalid number
+        {
+            std::cout << "invalid percentIO flag" << std::endl;
+            return 1;
+        }
+    }
+
+    if(randomFlag != arg.end())
+    {
+        isRandom = true;
+        if((randomFlag+1) != arg.end())
+        {
+            seed = intUserInput(*(randomFlag+1));
+        }
+        else
+        {
+            std::cout << "invalid seed" << std::endl;
+            return 1;
+        }
+    }
+    
+    if(argc < 4) //argc is less than 4 because 4 is the minimum number of argements required to run
+    {
+        helpArg();
+    }
+    if(filePath.length() > 0) //if we have json input
+    {
+        Schedule s = Schedule(filePath, percentIO);
+        policy::Policy p = policy::Policy(policyName, policy::Trace(), quantum);
+        p.evaluate(p, s);
+
+        return 0;
     }
     else
-    { 
-        std::cout << usageOut;
-        
+    {
+        Schedule s = Schedule(length, number, percentIO);
+        policy::Policy p = policy::Policy(policyName, policy::Trace(), quantum);
+        p.evaluate(p, s);
+
         return 0;
     }
+
+    return 0;
 }

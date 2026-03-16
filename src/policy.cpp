@@ -1,43 +1,43 @@
-#include "fcfs.h"
-
 #include <iostream>
 #include <string>
+#include "fcfs.h"
+
 using namespace local;
 
-void addEvent(strategy::Trace trace, strategy::Event e)
+void addEvent(policy::Trace trace, policy::Event e)
 {
     trace.trace.push_back(e);
     return;
 }
 
-strategy::Strategy evaluate(strategy::Strategy self, Schedule s) 
+policy::Policy evaluate(policy::Policy self, Schedule s) 
 {
     if(self.name == "FCFS")
     {
-        return strategy::FCFS::evaluate(s);
+        return policy::FCFS::evaluate(s);
     }
 
-    return strategy::Strategy("fake", strategy::Trace(), 0);
+    return policy::Policy("fake", policy::Trace(), 0);
 }
 
-std::string toString(strategy::Event e)
+std::string toString(policy::Event e)
 {
     std::string s = "(id - " + std::to_string(e.getID()) + " , start - " + std::to_string(e.getStart());
     s += ", end - " + std::to_string(e.getEnd()) + ")";
     return s;
 }
 
-std::string toString(strategy::Trace trace)
+std::string toString(policy::Trace trace)
 {
     std::string s;
-    for(strategy::Event e : trace.trace)
+    for(policy::Event e : trace.trace)
     {
         s += toString(e) + "\n";
     }
     return s;
 }
 
-std::string toString(strategy::Strategy s)
+std::string toString(policy::Policy s)
 {
     std::string str;
     str += s.name + "\n";
@@ -45,7 +45,7 @@ std::string toString(strategy::Strategy s)
     return str;
 }
 
-void printTraceAnalysis(strategy::Strategy self)
+void printTraceAnalysis(policy::Policy self)
 {
     std::string str = toString(self);
     std::cout << str << std::endl;

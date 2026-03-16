@@ -1,13 +1,13 @@
 #include <string>
-#include "strategy.h"
+#include "policy.h"
 
 using namespace local;
 
 namespace local {
-    namespace strategy {
+    namespace policy {
         namespace FCFS
         {
-            extern Strategy evaluate(Schedule s);
+            extern Policy evaluate(Schedule s);
         }
     }
 }

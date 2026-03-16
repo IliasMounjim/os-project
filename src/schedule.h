@@ -2,44 +2,53 @@
 #include <vector>
 
 namespace local {
-    class Job
+    class Job //TODO: add percent io
     {
         private:
-            int arrival; //arrival time
-            int length;  //job length
-            int id;
+            int id;        //job id
+            int percentIO; //percent i/o
+            int arrival;   //arrival time
+            int length;    //job length
+            int status;    //job status
+                           // 0 = running
+                           // 1 = ready
+                           // 2 = blocked
     
         public:
-            Job(int arrival, int length, int id)
-                : arrival(arrival)
+            Job(int id, int pio, int arrival, int length, int status)
+                : id(id)
+                , percentIO(pio)
+                , arrival(arrival)
                 , length(length)
-                , id(id)
+                , status(status)
             {}
 
             std::string jobString() { return "ID: " + std::to_string(id) + "\n" + "Arrival time: " + std::to_string(arrival) + "\nJob length: " + std::to_string(length) + "\n\0"; }
+            int setStatus(int s) { status = s; return status; }
+            int getID() { return id; }
+            int getPercentIO() { return percentIO; }
             int getArrival() { return arrival; }
             int getLength() { return length; }
-            int getID() { return id; }
+            int getStatus() { return status; }
     };
     
     class Schedule
     {
         public:
             std::vector<Job> schedule;
-            std::vector<Job>::iterator it;
             
             void printSchedule(std::vector<Job> schedule);
-            void fromInput(std::vector<Job> schedule, std::vector<local::Job>::iterator it, int length, int number);
-            int fromJson(std::vector<Job> schedule, std::vector<local::Job>::iterator it, std::string filepath);
+            void fromInput(std::vector<Job> schedule, int length, int number, int percentIO);
+            int fromJson(std::vector<Job> schedule, std::string filepath, int percentIO);
     
-            Schedule(int length, int number)
+            Schedule(int length, int number, int percentIO)
             {
-                fromInput(schedule, it, length, number);
+                fromInput(schedule, length, number, percentIO);
             }
 
-            Schedule(std::string filepath)
+            Schedule(std::string filepath, int percentIO)
             {
-                fromJson(schedule, it, filepath);
+                fromJson(schedule, filepath, percentIO);
             }
     };
 }

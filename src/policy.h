@@ -3,7 +3,7 @@
 #include "schedule.h"
 
 namespace local {
-    namespace strategy {
+    namespace policy {
         class Event
         {
             private:
@@ -23,7 +23,7 @@ namespace local {
                 {}
         };
         
-    class Trace
+        class Trace
         {
             public:
                 std::vector<Event> trace;
@@ -33,16 +33,17 @@ namespace local {
                 {}
         };
         
-        class Strategy 
+        class Policy 
         {
             public:
                 int quantum; //for RR and Lottery
                 std::string name;
                 Trace trace;
 
-                Strategy evaluate(Strategy self, Schedule s);
+                Policy evaluate(Policy self, Schedule s);
+                void printTraceAnalysis(Policy self);
 
-                Strategy(std::string name, Trace trace, int quantum)
+                Policy(std::string name, Trace trace, int quantum)
                     : name(name)
                     , trace(trace)
                     , quantum(quantum)

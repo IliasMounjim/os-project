@@ -6,19 +6,19 @@
 
 using namespace local;
 
-void fromInput(std::vector<Job> schedule, std::vector<Job>::iterator it, int length, int number)
+void fromInput(std::vector<Job> schedule, int length, int number, int percentIO)
 {
-    it = schedule.begin();
+    std::vector<Job>::iterator it = schedule.begin();
    
     for(int id = 0; id < number; id++)
     {
-        it = schedule.insert(it, Job(0, length, id));
+        it = schedule.insert(it, Job(id, percentIO, length, number, 1));
     }
 }
 
-int fromJson(std::vector<Job> schedule, std::vector<Job>::iterator it, std::string filepath) //return 0 on file read, 1 on failed read
+int fromJson(std::vector<Job> schedule, std::string filepath, int percentIO) //return 0 on file read, 1 on failed read
 { //TODO: FINISH JSON INPUT
-    it = schedule.begin();
+    std::vector<Job>::iterator it = schedule.begin();
     
     std::ifstream json;
     json.open(filepath);
@@ -30,7 +30,7 @@ int fromJson(std::vector<Job> schedule, std::vector<Job>::iterator it, std::stri
     }
     
     std::cout << "Couldn't read file, try again";
-    return 1;
+    std::exit(1);
 }
 
 void printSchedule(std::vector<Job> schedule)
