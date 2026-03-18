@@ -207,6 +207,7 @@ int main(int argc, char **args)
         Schedule s = Schedule(filePath, percentIO);
         policy::Policy p = policy::Policy(policyName, policy::Trace(), quantum);
         p.evaluate(p, s);
+        p.printTraceAnalysis(p);
 
         return 0;
     }
@@ -215,6 +216,7 @@ int main(int argc, char **args)
         Schedule s = Schedule(length, number, percentIO);
         policy::Policy p = policy::Policy(policyName, policy::Trace(), quantum);
         p.evaluate(p, s);
+        p.printTraceAnalysis(p);
 
         return 0;
     }
