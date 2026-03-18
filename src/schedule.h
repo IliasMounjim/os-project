@@ -2,7 +2,7 @@
 #include <vector>
 
 namespace local {
-    class Job //TODO: add percent io
+    class Job    
     {
         private:
             bool started = false; //has job started

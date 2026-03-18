@@ -26,15 +26,15 @@ unsigned bounded_rand(unsigned range)
 
 policy::Trace runJobs(Schedule s)
 {
-    std::sort(s.schedule.begin(), s.schedule.end(), comp); //sort by arrival, it's first come first served
-    
     Schedule readyQueue = Schedule(s); //all jobs are added to the ready queue after having been sorted appropriatly
     Schedule blockedQueue = Schedule(); //starts empty
     Job running = Job(readyQueue.schedule.front()); //on FCFS we start running 
     readyQueue.schedule.erase(readyQueue.schedule.begin()); //running job leaves queue
     
     bool noRunning = false; //nothing running, waiting for blocked
-    
+
+    std::sort(readyQueue.schedule.begin(), readyQueue.schedule.end(), comp); //sort by arrival, it's first come first served, speed up runtime
+                                                           
     std::uint64_t currTime = 0;
     policy::Trace trace = policy::Trace();
 
@@ -74,7 +74,7 @@ policy::Trace runJobs(Schedule s)
                 trace.addEvent(trace, policy::Event(running.getStart(), currTime, running.getID())); //add the relevant event to trace
                 std::sort(readyQueue.schedule.begin(), readyQueue.schedule.end(), comp); //sort by arrival, it's first come first served
             }
-            if(!readyQueue.schedule.empty()) //if there's soething to run
+            if(!readyQueue.schedule.empty()) //if there's something to run
             {
                 running = readyQueue.schedule.front(); //ready to running
                 noRunning = false;
