@@ -1,14 +1,12 @@
 #include <algorithm>
-#include <cctype>
 #include <cstdlib>
-#include <ctime>
 #include <iostream>
 #include <iterator>
 #include <ostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "policy.h"
+#include "fcfs.h"
 
 using namespace local;
 
@@ -204,19 +202,29 @@ int main(int argc, char **args)
     }
     if(filePath.length() > 0) //if we have json input
     {
-        Schedule s = Schedule(filePath, percentIO);
-        policy::Policy p = policy::Policy(policyName, policy::Trace(), quantum);
-        p.evaluate(p, s);
-        p.printTraceAnalysis(p);
+        Schedule s = Schedule(length, number, percentIO);
+        if(policyName == "FCFS")
+        {
+            policy::FCFS p = policy::FCFS(policyName, policy::Trace(), quantum);
+            p.evaluate(s);
+            p.printTraceAnalysis();
+        }
 
         return 0;
     }
     else
     {
         Schedule s = Schedule(length, number, percentIO);
-        policy::Policy p = policy::Policy(policyName, policy::Trace(), quantum);
-        p.evaluate(p, s);
-        p.printTraceAnalysis(p);
+        if(policyName == "FCFS")
+        {
+            policy::FCFS p = policy::FCFS(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
+        else if(policyName == "SJF")
+        {}
+        else if(policyName == "")
+        {}
 
         return 0;
     }

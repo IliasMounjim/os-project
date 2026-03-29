@@ -1,23 +1,15 @@
 #include <iostream>
 #include <string>
-#include "fcfs.h"
+#include "policy.h"
 
 using namespace local;
 
-void addEvent(policy::Trace trace, policy::Event e)
+void policy::Trace::addEvent(policy::Event e)
 {
-    trace.trace.push_back(e);
+    policy::Trace t = *this;
+    t.trace.push_back(e);
+    *this = t;
     return;
-}
-
-policy::Policy evaluate(policy::Policy self, Schedule s) 
-{
-    if(self.name == "FCFS")
-    {
-        return policy::FCFS::evaluate(s);
-    }
-
-    return policy::Policy("fake", policy::Trace(), 0);
 }
 
 std::string toString(policy::Event e)
@@ -45,9 +37,9 @@ std::string toString(policy::Policy s)
     return str;
 }
 
-void printTraceAnalysis(policy::Policy self)
+void policy::Policy::printTraceAnalysis()
 {
-    std::string str = toString(self);
+    std::string str = toString(*this);
     std::cout << str << std::endl;
 
     //tests past here

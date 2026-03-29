@@ -1,6 +1,8 @@
+#ifndef POLICY_H
+#define POLICY_H
+
 #include <string>
 #include <vector>
-#include "schedule.h"
 
 namespace local {
     namespace policy {
@@ -27,7 +29,7 @@ namespace local {
         {
             public:
                 std::vector<Event> trace;
-                void addEvent(Trace trace, Event e);
+                void addEvent(Event e);
             
                 Trace()
                 {}
@@ -40,8 +42,7 @@ namespace local {
                 std::string name;
                 Trace trace;
 
-                Policy evaluate(Policy self, Schedule s);
-                void printTraceAnalysis(Policy self);
+                void printTraceAnalysis();
 
                 Policy(std::string name, Trace trace, int quantum)
                     : name(name)
@@ -51,3 +52,5 @@ namespace local {
         };
     }
 }
+
+#endif

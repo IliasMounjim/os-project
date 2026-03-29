@@ -1,3 +1,6 @@
+#ifndef SCHEDULE_H
+#define SCHEDULE_H
+
 #include <string>
 #include <vector>
 
@@ -23,7 +26,7 @@ namespace local {
                 , status(status)
             {}
 
-            std::string jobString() { return "ID: " + std::to_string(id) + "\n" + "Arrival time: " + std::to_string(arrival) + "\nJob lengthLeft: " + std::to_string(lengthLeft) + "\n\0"; }
+            std::string jobString() { return "ID: " + std::to_string(id) + "\n" + "Arrival time: " + std::to_string(arrival) + "\n" + "Job lengthLeft: " + std::to_string(lengthLeft); }
             int decrementLength() { lengthLeft--; return lengthLeft; }
             bool setStarted(bool b) { started = b; return started; }
             int setStatus(int s) { status = s; return status; }
@@ -44,21 +47,23 @@ namespace local {
         public:
             std::vector<Job> schedule;
             
-            void printSchedule(std::vector<Job> schedule);
-            void fromInput(std::vector<Job> schedule, int lengthLeft, int number, int percentIO);
-            int fromJson(std::vector<Job> schedule, std::string filepath, int percentIO);
+            void printSchedule();
+            void fromInput(int lengthLeft, int number, int percentIO);
+            int fromJson(std::string filepath, int percentIO);
 
             Schedule()
             {}
     
             Schedule(int lengthLeft, int number, int percentIO)
             {
-                fromInput(schedule, lengthLeft, number, percentIO);
+                fromInput(lengthLeft, number, percentIO);
             }
 
             Schedule(std::string filepath, int percentIO)
             {
-                fromJson(schedule, filepath, percentIO);
+                fromJson(filepath, percentIO);
             }
     };
 }
+
+#endif
