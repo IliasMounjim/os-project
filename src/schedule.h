@@ -53,6 +53,10 @@ namespace local {
 
             Schedule()
             {}
+
+            Schedule(const Schedule &s)
+                : schedule(s.schedule)
+            {}
     
             Schedule(int lengthLeft, int number, int percentIO)
             {

@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
-#include <experimental/filesystem>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -49,7 +48,7 @@ policy::Trace runJobs(Schedule s)
             running.setStarted(true); //a gate to make sure we know only when the start is
             running.setStart(currTime);
         }
-        
+
         if(bounded_rand(100) < running.getPercentIO() && !noRunning) //if we got an io moment and we've got a running job
         {
             trace.addEvent(policy::Event(running.getStart(), currTime, running.getID())); //the job ran until now
@@ -62,7 +61,7 @@ policy::Trace runJobs(Schedule s)
 
         if(!blockedQueue.schedule.empty())
         {
-            for(std::vector<Job>::iterator it = blockedQueue.schedule.begin(); it < blockedQueue.schedule.end(); it++) //for each blocked job
+            for(std::vector<Job>::iterator it = blockedQueue.schedule.begin(); it != blockedQueue.schedule.end(); it++) //for each blocked job
             { //blocked to ready
                 if(currTime == (*it).getIOEnd()) //if the job at it is done with i/o
                 {
@@ -77,15 +76,20 @@ policy::Trace runJobs(Schedule s)
             }
         }
 
-        if(running.getLength() == 0) //if currently running is done and we are runnign to begin with
+        if(!noRunning) //if we're running a job
         {
-            if(!noRunning)
+            running.decrementLength(); // the current running is closer to over
+        }
+
+        if(running.getLength() == 0) //if currently running is done
+        {
+            if(!noRunning) //if we were runnign to begin with
             {
                 running.setStatus(1); //set running to done
                 trace.addEvent(policy::Event(running.getStart(), currTime, running.getID())); //add the relevant event to trace
                 std::sort(readyQueue.schedule.begin(), readyQueue.schedule.end(), comp); //sort by arrival, it's first come first served
             }
-            if(!readyQueue.schedule.empty()) //if there's something to run
+            if(!readyQueue.schedule.empty() && readyQueue.schedule.front().getArrival() <= currTime) //if there's something to run that has arrived
             {
                 running = readyQueue.schedule.front(); //ready to running
                 readyQueue.schedule.erase(readyQueue.schedule.begin()); //running out of ready
@@ -102,14 +106,9 @@ policy::Trace runJobs(Schedule s)
             }
         }
         
-        if(!noRunning) //if we're running a job
-        {
-            running.decrementLength(); // the current running is closer to over
-        }
-
         currTime++;
 
-        if(currTime % 500 == 0)
+        if(currTime % 500 == 0) //in case it takes a while to run, shows something and gives you a bit of info
         {
             if(currTime % 100000 == 0)
             {
