@@ -183,7 +183,7 @@ int main(int argc, char **args)
     }
 
     if(randomFlag != arg.end())
-    {
+    { //TODO:ACTUALLY IMPLEMENT RANDOM SCHEDULE GENERATION
         isRandom = true;
         if((randomFlag+1) != arg.end())
         {
@@ -211,6 +211,10 @@ int main(int argc, char **args)
         }
 
         return 0;
+    }
+    else if(isRandom)
+    {
+        //TODO: WRITE UP RANDOM
     }
     else
     {

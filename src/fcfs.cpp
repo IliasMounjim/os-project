@@ -55,8 +55,16 @@ policy::Trace runJobs(Schedule s)
             running.setStarted(false); //the job is no longer running
             running.setIOEnd((int) (bounded_rand(ioLengthRange) + currTime)); //set ioEnd to the right number 
             blockedQueue.schedule.push_back(running); //add the blocked job to the correct queue
-            running = readyQueue.schedule.front(); //push the next to run to run
-            readyQueue.schedule.erase(readyQueue.schedule.begin()); //the running is no longer ready
+            if(!readyQueue.schedule.empty() && readyQueue.schedule.front().getArrival() <= currTime) //if we still have readied up jobs that have arrived
+            {
+                running = readyQueue.schedule.front(); //push the next to run to run
+                readyQueue.schedule.erase(readyQueue.schedule.begin()); //the running is no longer ready
+            }
+            else //set running to a temp, what was running still has work to do
+            {
+                running = Job(-1, 0, 0, 0, 1);
+                noRunning = true; //we've got nothing to run from here
+            }
         }
 
         if(!blockedQueue.schedule.empty())
@@ -89,7 +97,7 @@ policy::Trace runJobs(Schedule s)
                 trace.addEvent(policy::Event(running.getStart(), currTime, running.getID())); //add the relevant event to trace
                 std::sort(readyQueue.schedule.begin(), readyQueue.schedule.end(), comp); //sort by arrival, it's first come first served
             }
-            if(!readyQueue.schedule.empty() && readyQueue.schedule.front().getArrival() <= currTime) //if there's something to run that has arrived
+            if(!readyQueue.schedule.empty() && readyQueue.schedule.front().getArrival() <= currTime) //if there's something to run that has arrived already
             {
                 running = readyQueue.schedule.front(); //ready to running
                 readyQueue.schedule.erase(readyQueue.schedule.begin()); //running out of ready
