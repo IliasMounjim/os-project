@@ -43,6 +43,12 @@ policy::Trace runJobs(Schedule s)
 
     while(!readyQueue.schedule.empty() || !blockedQueue.schedule.empty()) //we're going until we work through all viable jobs
     {
+        if(currTime == UINT64_MAX)
+        {
+            std::cout << "Ran too long, terminating" << std::endl;
+            exit(2);
+        }
+        
         if(!running.getStarted() && !noRunning) //if not started, start, and only if we've got something to start
         { //second trigger shoudl never matter, don't want to test
             running.setStarted(true); //a gate to make sure we know only when the start is
@@ -89,7 +95,7 @@ policy::Trace runJobs(Schedule s)
             running.decrementLength(); // the current running is closer to over
         }
 
-        if(running.getLength() == 0) //if currently running is done
+        if(running.getLength() <= 0) //if currently running is done
         {
             if(!noRunning) //if we were runnign to begin with
             {

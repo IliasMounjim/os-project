@@ -13,7 +13,8 @@ using namespace local;
 // EXIT CODES
 // 0 - standard exit, might still have issues, but it got to a valid end
 // 1 - invalid input
-// 2 - you shouldn't have got here
+// 2 - other
+// 3 - you shouldn't have got here
 
 bool isNumber(std::string s)
 {
