@@ -43,7 +43,7 @@ policy::Trace runJobs(Schedule s)
 
     while(!readyQueue.schedule.empty() || !blockedQueue.schedule.empty()) //we're going until we work through all viable jobs
     {
-        if(currTime == UINT64_MAX)
+        if(currTime == UINT64_MAX) //escape so that currTime doesn't overflow
         {
             std::cout << "Ran too long, terminating" << std::endl;
             exit(2);
@@ -85,6 +85,8 @@ policy::Trace runJobs(Schedule s)
             }
         }
         
+        //we do io after the above to avoid a loop where jobs enter and exit blocked near infinitely (a job ending before io is preferable)
+        //likewise why we block before we remove from blocked, no grand loops
         if(bounded_rand(100) < running.getPercentIO() && !noRunning) //if we got an io moment and we've got a running job
         {
             trace.addEvent(policy::Event(running.getStart(), currTime, running.getID())); //the job ran until now
