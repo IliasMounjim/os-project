@@ -54,7 +54,37 @@ policy::Trace runJobs(Schedule s)
             running.setStarted(true); //a gate to make sure we know only when the start is
             running.setStart(currTime);
         }
+        
+        if(!noRunning) //if we're running a job
+        {
+            running.decrementLength(); // the current running is closer to over
+        }
 
+        if(running.getLength() <= 0) //if currently running is done
+        {
+            if(!noRunning) //if we were runnign to begin with
+            {
+                running.setStatus(1); //set running to done
+                trace.addEvent(policy::Event(running.getStart(), currTime, running.getID())); //add the relevant event to trace
+                std::sort(readyQueue.schedule.begin(), readyQueue.schedule.end(), comp); //sort by arrival, it's first come first served
+            }
+            if(!readyQueue.schedule.empty() && readyQueue.schedule.front().getArrival() <= currTime) //if there's something to run that has arrived already
+            {
+                running = readyQueue.schedule.front(); //ready to running
+                readyQueue.schedule.erase(readyQueue.schedule.begin()); //running out of ready
+                if(noRunning)
+                {
+                    trace.addEvent(policy::Event(breakStart, currTime, -1));
+                }
+                noRunning = false;
+            }
+            else //there's nothing to run
+            {
+                noRunning = true;
+                breakStart = currTime;
+            }
+        }
+        
         if(bounded_rand(100) < running.getPercentIO() && !noRunning) //if we got an io moment and we've got a running job
         {
             trace.addEvent(policy::Event(running.getStart(), currTime, running.getID())); //the job ran until now
@@ -90,36 +120,6 @@ policy::Trace runJobs(Schedule s)
             }
         }
 
-        if(!noRunning) //if we're running a job
-        {
-            running.decrementLength(); // the current running is closer to over
-        }
-
-        if(running.getLength() <= 0) //if currently running is done
-        {
-            if(!noRunning) //if we were runnign to begin with
-            {
-                running.setStatus(1); //set running to done
-                trace.addEvent(policy::Event(running.getStart(), currTime, running.getID())); //add the relevant event to trace
-                std::sort(readyQueue.schedule.begin(), readyQueue.schedule.end(), comp); //sort by arrival, it's first come first served
-            }
-            if(!readyQueue.schedule.empty() && readyQueue.schedule.front().getArrival() <= currTime) //if there's something to run that has arrived already
-            {
-                running = readyQueue.schedule.front(); //ready to running
-                readyQueue.schedule.erase(readyQueue.schedule.begin()); //running out of ready
-                if(noRunning)
-                {
-                    trace.addEvent(policy::Event(breakStart, currTime, -1));
-                }
-                noRunning = false;
-            }
-            else //there's nothing to run
-            {
-                noRunning = true;
-                breakStart = currTime;
-            }
-        }
-        
         currTime++;
 
         if(currTime % 500 == 0) //in case it takes a while to run, shows something and gives you a bit of info
