@@ -16,14 +16,16 @@ namespace local {
             int arrival;   //arrival time
             int lengthLeft;    //job length
             int status;    //job status, 1 is done
+            int priority;  // job priority, higher is more priority, default 0
     
         public:
-            Job(int id, int pio, int arrival, int lengthLeft, int status)
+            Job(int id, int pio, int arrival, int lengthLeft, int status, int priority = 0)
                 : id(id)
                 , percentIO(pio)
                 , arrival(arrival)
                 , lengthLeft(lengthLeft)
                 , status(status)
+                , priority(priority)
             {}
 
             std::string jobString() { return "ID: " + std::to_string(id) + "\n" + "Arrival time: " + std::to_string(arrival) + "\n" + "Job lengthLeft: " + std::to_string(lengthLeft); }
@@ -40,6 +42,7 @@ namespace local {
             int getArrival() { return arrival; }
             int getLength() { return lengthLeft; }
             int getStatus() { return status; }
+            int getPriority() { return priority; }
     };
     
     class Schedule
