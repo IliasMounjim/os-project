@@ -74,7 +74,7 @@ void helpArg()
 int main(int argc, char **args)
 {
     std::vector<std::string> arg;
-    std::string policies[] = {"FCFS", "LJF", "SJF", "SRTF", "RR", "LOTTERY", "HYBRID"};
+    std::string policies[] = {"FCFS", "LJF", "SJF", "SRTF", "RR", "LOTTERY", "PRIORITY", "HYBRID"};
 
     for(int i = 0; i < argc; i++) //all arguements into strings
     {

@@ -21,6 +21,7 @@ target_sources(schedulerSim
       src/ljf.cpp
       src/rr.cpp
       src/lottery.cpp
+      src/priority.cpp
       src/hybrid.cpp
       src/main.cpp
       
@@ -34,5 +35,6 @@ target_sources(schedulerSim
       src/ljf.h
       src/rr.h
       src/lottery.h
+      src/priority.h
       src/hybrid.h
 )
