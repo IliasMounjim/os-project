@@ -10,6 +10,9 @@
 #include "policy.h"
 #include "sjf.h"
 #include "rr.h"
+#include "srtf.h"
+#include "ljf.h"
+#include "priority.h"
 
 using namespace local;
 
@@ -50,7 +53,7 @@ void helpArg()
 {
     std::cout << "schedulerSim <FLAGS>" << std::endl;
     std::cout << "-h, prints this help message" << std::endl;
-    std::cout << "-p POLICY, select the policy evaluated from the following list, not optional, FCFS, LJF, SJF, SRTF, RR, LOTTERY, HYBRID" << std::endl;
+    std::cout << "-p POLICY, select the policy evaluated from the following list, not optional, FCFS, LJF, SJF, SRTF, RR, PRIORITY, LOTTERY, HYBRID" << std::endl;
     std::cout << "-q NUMBER, the time quantum, put in a valid int, defaults to 10" << std::endl;
     std::cout << "-l NUMBER, the length of the uniform job set, put in valid int, doesn't default" << std::endl;
     std::cout << "-i NUMBER, percentIO for jobs, uniform workload" << std::endl;
@@ -238,6 +241,24 @@ int main(int argc, char **args)
         else if(policyName == "RR")
         {
             policy::RR p = policy::RR(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
+        else if(policyName == "SRTF")
+        {
+            policy::SRTF p = policy::SRTF(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
+        else if(policyName == "LJF")
+        {
+            policy::LJF p = policy::LJF(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
+        else if(policyName == "PRIORITY")
+        {
+            policy::Priority p = policy::Priority(policyName, policy::Trace(), quantum);
             policy::Policy toPrint = p.evaluate(s);
             toPrint.printTraceAnalysis();
         }
