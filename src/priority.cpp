@@ -15,25 +15,25 @@ using namespace local;
 unsigned int const IO_LENGTH_RANGE = 100;
 
 // Compare job priority, returning true if a has higher priority than b
-bool compare_priority(Job& a, Job& b) {
+bool priority_compare_priority(Job& a, Job& b) {
     return a.getPriority() > b.getPriority();
 }
 
 // Compare job arrival, returning true if a arrived before b
-bool compare_arrival(Job& a, Job& b) {
+bool priority_compare_arrival(Job& a, Job& b) {
     return a.getArrival() < b.getArrival();
 }
 
-Job get_next_job(Schedule& s) {
+Job priority_get_next_job(Schedule& s) {
     Job next_job = s.schedule.front();
     for(std::vector<Job>::iterator it = s.schedule.begin(); it != s.schedule.end(); it++) {
         // If the job has higher priority, select it
-        if(compare_priority(*it, next_job)) {
+        if(priority_compare_priority(*it, next_job)) {
             next_job = *it;
 
         // If the same priority, compare arrival time
         } else if (it->getPriority() == next_job.getPriority()) {
-            if(compare_arrival(*it, next_job)) {
+            if(priority_compare_arrival(*it, next_job)) {
                 next_job = *it;
             }
         }
@@ -44,13 +44,13 @@ Job get_next_job(Schedule& s) {
 
 // Generate a random number in the range [0, range)
 // Same method as implemented in FCFS.cpp
-unsigned bounded_rand(unsigned range) {
+unsigned priority_bounded_rand(unsigned range) {
     for (unsigned x, r;;)
         if (x = rand(), r = x % range, x - r <= -range)
             return r;
 }
 
-policy::Trace runJobs(Schedule s) {
+policy::Trace priorityRunJobs(Schedule s) {
 
     // Initialize the three queues
     Schedule unarrivedQueue = Schedule(s); // Jobs that have not yet arrived
@@ -95,7 +95,7 @@ policy::Trace runJobs(Schedule s) {
                 readyQueue.schedule.push_back(*it);
 
                 // Check if the newly arrived job has a higher priority
-                if (job_running && compare_priority(*it, running)) {
+                if (job_running && priority_compare_priority(*it, running)) {
                     preempt = true;
                 }
 
@@ -108,7 +108,7 @@ policy::Trace runJobs(Schedule s) {
         }
 
         // If no jobs are available to run
-        if(readyQueue.schedule.empty() == true) {
+        if(job_running == false && readyQueue.schedule.empty() == true) {
             job_running = false;
             break_start = current_time;
         }
@@ -117,7 +117,7 @@ policy::Trace runJobs(Schedule s) {
         if(job_running == false) {
             if (readyQueue.schedule.empty() == false) {
                 // Retrieve the next job to run from the ready queue
-                running = get_next_job(readyQueue);
+                running = priority_get_next_job(readyQueue);
                 job_running = true;
 
                 // Start the next job
@@ -144,7 +144,7 @@ policy::Trace runJobs(Schedule s) {
                 readyQueue.schedule.push_back(running);
 
                 // Retrieve the next job to run from the ready queue
-                running = get_next_job(readyQueue);
+                running = priority_get_next_job(readyQueue);
                 job_running = true;
 
                 // Start the next job
@@ -174,15 +174,19 @@ policy::Trace runJobs(Schedule s) {
                 running.setStatus(1); // Set to finished
                 trace.addEvent(policy::Event(running.getStart(), current_time, running.getID())); // Add finish event to trace
                 finished_jobs++; // Increment finished job counter
+
+                // Set running to a dummy job
+                running = Job(-1, 0, 0, 0, 1);
+                job_running = false;
             }
         }
         
         // If the job has an IO event
-        if(job_running == true && bounded_rand(100) < running.getPercentIO()) {
+        if(job_running == true && priority_bounded_rand(100) < running.getPercentIO()) {
 
             trace.addEvent(policy::Event(running.getStart(), current_time, running.getID())); // Add event to trace
             running.setStarted(false); // Job not running while blocked
-            running.setIOEnd((int) (bounded_rand(IO_LENGTH_RANGE) + current_time)); // Set IO end time
+            running.setIOEnd((int) (priority_bounded_rand(IO_LENGTH_RANGE) + current_time)); // Set IO end time
             blockedQueue.schedule.push_back(running); // Add the blocked job to the correct queue
 
             // Set running to a dummy job
@@ -223,5 +227,5 @@ policy::Trace runJobs(Schedule s) {
 }
 
 policy::Policy policy::Priority::evaluate(Schedule s) {
-    return policy::Policy("Priority", runJobs(s), 0);
+    return policy::Policy("Priority", priorityRunJobs(s), 0);
 }
