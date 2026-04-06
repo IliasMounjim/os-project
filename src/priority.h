@@ -1,5 +1,5 @@
-#ifndef LJF_H
-#define LJF_H
+#ifndef PRIORITY_H
+#define PRIORITY_H
 
 #include <string>
 #include "schedule.h"
@@ -9,12 +9,12 @@ using namespace local;
 
 namespace local {
     namespace policy {
-        class LJF : public Policy
+        class Priority: public Policy
         {
             public:
                 Policy evaluate(Schedule s);
 
-                LJF(std::string name, Trace trace, int quantum) : Policy(name, trace, quantum)
+                Priority(std::string name, Trace trace, int quantum) : Policy(name, trace, quantum)
                 {}
         };
     }
