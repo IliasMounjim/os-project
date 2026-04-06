@@ -7,6 +7,9 @@
 #include <string>
 #include <vector>
 #include "fcfs.h"
+#include "policy.h"
+#include "sjf.h"
+#include "rr.h"
 
 using namespace local;
 
@@ -227,8 +230,18 @@ int main(int argc, char **args)
             toPrint.printTraceAnalysis();
         }
         else if(policyName == "SJF")
-        {}
-        else if(policyName == "")
+        {
+            policy::SJF p = policy::SJF(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
+        else if(policyName == "RR")
+        {
+            policy::RR p = policy::RR(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
+        else
         {}
 
         return 0;
