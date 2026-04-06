@@ -213,10 +213,42 @@ int main(int argc, char **args)
         if(policyName == "FCFS")
         {
             policy::FCFS p = policy::FCFS(policyName, policy::Trace(), quantum);
-            p.evaluate(s);
-            p.printTraceAnalysis();
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
         }
-
+        else if(policyName == "SJF")
+        {
+            policy::SJF p = policy::SJF(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
+        else if(policyName == "RR")
+        {
+            policy::RR p = policy::RR(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
+        else if(policyName == "SRTF")
+        {
+            policy::SRTF p = policy::SRTF(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
+        else if(policyName == "LJF")
+        {
+            policy::LJF p = policy::LJF(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
+        else if(policyName == "PRIORITY")
+        {
+            policy::Priority p = policy::Priority(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
+        else
+        {}
+        
         return 0;
     }
     else if(isRandom)
