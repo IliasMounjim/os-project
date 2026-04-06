@@ -7,16 +7,16 @@
 
 #include "schedule.h"
 #include "policy.h"
-#include "srtf.h"
+#include "priority.h"
 
 using namespace local;
 
 // Maximum IO Length
 unsigned int const IO_LENGTH_RANGE = 100;
 
-// Compare job length, returning true if a is shorter than b
-bool compare_length(Job& a, Job& b) {
-    return a.getLength() < b.getLength();
+// Compare job priority, returning true if a has higher priority than b
+bool compare_priority(Job& a, Job& b) {
+    return a.getPriority() > b.getPriority();
 }
 
 // Compare job arrival, returning true if a arrived before b
@@ -27,12 +27,12 @@ bool compare_arrival(Job& a, Job& b) {
 Job get_next_job(Schedule& s) {
     Job next_job = s.schedule.front();
     for(std::vector<Job>::iterator it = s.schedule.begin(); it != s.schedule.end(); it++) {
-        // If the job has a shorter length, select it
-        if(compare_length(*it, next_job)) {
+        // If the job has higher priority, select it
+        if(compare_priority(*it, next_job)) {
             next_job = *it;
 
-        // If the same length, compare arrival time
-        } else if (it->getLength() == next_job.getLength()) {
+        // If the same priority, compare arrival time
+        } else if (it->getPriority() == next_job.getPriority()) {
             if(compare_arrival(*it, next_job)) {
                 next_job = *it;
             }
@@ -94,8 +94,8 @@ policy::Trace runJobs(Schedule s) {
                 // Add the job to the ready queue
                 readyQueue.schedule.push_back(*it);
 
-                // Check if the newly arrived job has a shorter length
-                if (job_running && compare_length(*it, running)) {
+                // Check if the newly arrived job has a higher priority
+                if (job_running && compare_priority(*it, running)) {
                     preempt = true;
                 }
 
@@ -222,6 +222,6 @@ policy::Trace runJobs(Schedule s) {
     return trace;
 }
 
-policy::Policy policy::SRTF::evaluate(Schedule s) {
-    return policy::Policy("SRTF", runJobs(s), 0);
+policy::Policy policy::Priority::evaluate(Schedule s) {
+    return policy::Policy("Priority", runJobs(s), 0);
 }
