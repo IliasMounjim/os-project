@@ -1,7 +1,7 @@
 # A Fairly Simple OS Class Project
 ### To Build
-cmake .
+cmake -B build
 
-cmake --build .
+cmake --build build
 
-will have built to ./bin
+will have built to build/bin
