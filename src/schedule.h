@@ -52,7 +52,7 @@ namespace local {
             
             void printSchedule();
             void fromInput(int lengthLeft, int number, int percentIO);
-            int fromJson(std::string filepath, int percentIO);
+            int fromJson(std::string filepath);
 
             Schedule()
             {}
@@ -66,9 +66,9 @@ namespace local {
                 fromInput(lengthLeft, number, percentIO);
             }
 
-            Schedule(std::string filepath, int percentIO)
+            Schedule(std::string filepath)
             {
-                fromJson(filepath, percentIO);
+                fromJson(filepath);
             }
     };
 }

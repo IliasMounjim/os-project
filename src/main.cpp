@@ -209,7 +209,7 @@ int main(int argc, char **args)
     }
     if(filePath.length() > 0) //if we have json input
     {
-        Schedule s = Schedule(length, number, percentIO);
+        Schedule s = Schedule(filePath);
         if(policyName == "FCFS")
         {
             policy::FCFS p = policy::FCFS(policyName, policy::Trace(), quantum);
