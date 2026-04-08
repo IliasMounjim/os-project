@@ -72,6 +72,7 @@ policy::Trace srtfRunJobs(Schedule s) {
 
     // Initialize trace to record events and return at end
     policy::Trace trace = policy::Trace();
+    trace.s = s;
 
     // Used for printing info
     int itemNumber = 0;

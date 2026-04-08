@@ -84,6 +84,8 @@ policy::Trace sjfRunJobs(Schedule s)
     Schedule blockedQueue = Schedule();
     policy::Trace trace   = policy::Trace();
 
+    trace.s = s;
+
     // sort by arrival so we start with the earliest job
     std::sort(readyQueue.schedule.begin(), readyQueue.schedule.end(),
         [](Job a, Job b) { return a.getArrival() < b.getArrival(); });

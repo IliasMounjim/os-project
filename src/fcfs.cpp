@@ -38,6 +38,7 @@ policy::Trace runJobs(Schedule s)
     std::uint64_t currTime = 0;
     std::uint64_t breakStart = 0;
     policy::Trace trace = policy::Trace();
+    trace.s = s;
 
     int itemNumber = 0;
 

@@ -1,6 +1,7 @@
 #ifndef POLICY_H
 #define POLICY_H
 
+#include "src/schedule.h"
 #include <string>
 #include <vector>
 
@@ -28,6 +29,7 @@ namespace local {
         class Trace
         {
             public:
+                Schedule s;
                 std::vector<Event> trace;
                 void addEvent(Event e);
             

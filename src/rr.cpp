@@ -39,6 +39,8 @@ policy::Trace rrRunJobs(Schedule s, int quantum)
     Schedule readyQueue   = Schedule(s);
     Schedule blockedQueue = Schedule();
     policy::Trace trace   = policy::Trace();
+    
+    trace.s = s;
 
     std::sort(readyQueue.schedule.begin(), readyQueue.schedule.end(),
         [](Job a, Job b) { return a.getArrival() < b.getArrival(); });
