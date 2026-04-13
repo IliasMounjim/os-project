@@ -30,7 +30,7 @@ namespace local {
                 , firstStart(-1)
             {}
 
-            std::string jobString() { return "ID: " + std::to_string(id) + "\n" + "Arrival time: " + std::to_string(arrival) + "\n" + "Job lengthLeft: " + std::to_string(lengthLeft); }
+            std::string jobString() { return "ID: " + std::to_string(id) + "\n" + "Arrival time: " + std::to_string(arrival) + "\n" + "Job lengthLeft: " + std::to_string(lengthLeft) + "\n" + "startTime: " + std::to_string(firstStart); }
             int decrementLength() { lengthLeft--; return lengthLeft; }
             bool setStarted(bool b) { started = b; return started; }
             int setStatus(int s) { status = s; return status; }
