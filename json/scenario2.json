@@ -1,0 +1,32 @@
+{
+    "0" : {
+        "arrival" : 0,
+        "length" : 100,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "1" : {
+        "arrival" : 25,
+        "length" : 200,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "2" : {
+        "arrival" : 50,
+        "length" : 300,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "3" : {
+        "arrival" : 75,
+        "length" : 400,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "4" : {
+        "arrival" : 100,
+        "length" : 500,
+        "percentIO" : 0,
+        "priority" : 0
+    }
+}

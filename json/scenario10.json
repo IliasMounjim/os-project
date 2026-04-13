@@ -1,0 +1,128 @@
+{
+    "0" : {
+        "arrival" : 0,
+        "length" : 100,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "1" : {
+        "arrival" : 50,
+        "length" : 120,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "2" : {
+        "arrival" : 100,
+        "length" : 140,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "3" : {
+        "arrival" : 150,
+        "length" : 160,
+        "percentIO" : 0.25,
+        "priority" : 0
+    },
+    "4" : {
+        "arrival" : 200,
+        "length" : 180,
+        "percentIO" : 0.25,
+        "priority" : 0
+    },
+    "5" : {
+        "arrival" : 250,
+        "length" : 200,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "6" : {
+        "arrival" : 300,
+        "length" : 220,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "7" : {
+        "arrival" : 350,
+        "length" : 240,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "8" : {
+        "arrival" : 400,
+        "length" : 260,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "9" : {
+        "arrival" : 450,
+        "length" : 280,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "10" : {
+        "arrival" : 500,
+        "length" : 300,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "11" : {
+        "arrival" : 550,
+        "length" : 320,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "12" : {
+        "arrival" : 600,
+        "length" : 340,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "13" : {
+        "arrival" : 650,
+        "length" : 360,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "14" : {
+        "arrival" : 700,
+        "length" : 380,
+        "percentIO" : 0.25,
+        "priority" : 0
+    },
+    "15" : {
+        "arrival" : 750,
+        "length" : 400,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "16" : {
+        "arrival" : 800,
+        "length" : 420,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "17" : {
+        "arrival" : 850,
+        "length" : 440,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "18" : {
+        "arrival" : 900,
+        "length" : 460,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "19" : {
+        "arrival" : 950,
+        "length" : 480,
+        "percentIO" : 0,
+        "priority" : 0
+    },
+    "20" : {
+        "arrival" : 1000,
+        "length" : 500,
+        "percentIO" : 0.25,
+        "priority" : 0
+    }
+}
