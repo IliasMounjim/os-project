@@ -10,7 +10,6 @@ namespace local {
         private:
             bool started = false; //has job started
             int id;               //job id
-            int firstStart;       //for turnaround calculations
             int start;            //when job start
             int percentIO;        //percent chance of i/o
             int ioEnd;            //when does our io end
@@ -18,6 +17,7 @@ namespace local {
             int lengthLeft;       //job length
             int status;           //job status, 1 is done
             int priority;         //job priority, higher is more priority, default 0
+            int tickets;          //the tickets from the lottery
     
         public:
             Job(int id, int pio, int arrival, int lengthLeft, int status, int priority = 0)
@@ -27,15 +27,16 @@ namespace local {
                 , lengthLeft(lengthLeft)
                 , status(status)
                 , priority(priority)
-                , firstStart(-1)
+                , tickets()
             {}
 
-            std::string jobString() { return "ID: " + std::to_string(id) + "\n" + "Arrival time: " + std::to_string(arrival) + "\n" + "Job lengthLeft: " + std::to_string(lengthLeft) + "\n" + "startTime: " + std::to_string(firstStart); }
+            std::string jobString() { return "ID: " + std::to_string(id) + "\n" + "Arrival time: " + std::to_string(arrival) + "\n" + "Job lengthLeft: " + std::to_string(lengthLeft); }
             int decrementLength() { lengthLeft--; return lengthLeft; }
             bool setStarted(bool b) { started = b; return started; }
             int setStatus(int s) { status = s; return status; }
-            int setStart(int s) { if(firstStart < 0) firstStart = s; start = s; return start; } //logs the first start only that first time
+            int setStart(int s) { start = s; return start; } //logs the first start only that first time
             int setIOEnd(int e) { ioEnd = e; return ioEnd; }
+            int setTickets(int t) {tickets = t; return t; }
             bool getStarted() { return started; }
             int getID() { return id; }
             int getStart() { return start; }
@@ -45,6 +46,7 @@ namespace local {
             int getLength() { return lengthLeft; }
             int getStatus() { return status; }
             int getPriority() { return priority; }
+            int getTickets() { return tickets; }
     };
     
     class Schedule

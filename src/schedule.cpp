@@ -58,4 +58,5 @@ void Schedule::printSchedule()
     {
         std::cout << j.jobString() << std::endl;
     }
+    std::cout << std::endl;
 }

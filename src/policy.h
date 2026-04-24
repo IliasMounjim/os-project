@@ -1,9 +1,9 @@
 #ifndef POLICY_H
 #define POLICY_H
 
-#include "src/schedule.h"
 #include <string>
 #include <vector>
+#include "schedule.h"
 
 namespace local {
     namespace policy {
@@ -18,8 +18,11 @@ namespace local {
                 int getStart() { return start; }
                 int getEnd() { return end; }
                 int getID() { return jobID; }
+
+                bool operator== (const Event &other) const { return (this->jobID == other.jobID) && (this->start == other.start) && (this->end == other.end); }
+                bool operator!= (const Event &other) const { return !(*this == other); }
                 
-                Event(int start, int end, int id)
+                Event(int start = -1, int end = -1, int id = -1)
                     : start(start)
                     , end(end)
                     , jobID(id)
@@ -32,7 +35,11 @@ namespace local {
                 Schedule s;
                 std::vector<Event> trace;
                 void addEvent(Event e);
-            
+                Event getEvent(int i);
+                Event getLastOccured(int id);
+                Event getFirstOccured(int id);
+                float fairnessEvent(int id);
+           
                 Trace()
                 {}
         };
