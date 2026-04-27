@@ -92,6 +92,9 @@ policy::Trace rrRunJobs(Schedule s, int quantum)
                     trace.addEvent(policy::Event(breakStart, currTime, -1));
                 noRunning = false;
                 slice = 0;
+                // initialize start so a same-tick i/o block doesn't read garbage
+                running.setStarted(true);
+                running.setStart(currTime);
             }
             else
             {
@@ -111,6 +114,9 @@ policy::Trace rrRunJobs(Schedule s, int quantum)
             readyQueue.schedule.erase(readyQueue.schedule.begin());
             noRunning = false;
             slice = 0;
+            // same fix as above, see comment
+            running.setStarted(true);
+            running.setStart(currTime);
         }
 
         // i/o block — stochastic, same model as sjf/fcfs
@@ -128,6 +134,8 @@ policy::Trace rrRunJobs(Schedule s, int quantum)
                 running = readyQueue.schedule.front();
                 readyQueue.schedule.erase(readyQueue.schedule.begin());
                 slice = 0;
+                running.setStarted(true);
+                running.setStart(currTime);
             }
             else
             {

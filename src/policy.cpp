@@ -136,6 +136,9 @@ void policy::Policy::printTraceAnalysis()
     for(Job j : this->trace.s.schedule)
     {
         resp = this->trace.getFirstOccured(j.getID()).getStart() - j.getArrival();
+        // response time is by definition >= 0. clamp here so trace events
+        // with stale start fields can't push it negative and corrupt the avg
+        if (resp < 0) resp = 0;
         turn = this->trace.getLastOccured(j.getID()).getEnd() - j.getArrival(); // end - arrival, get end from trace
         unfairness = this->trace.fairnessEvent(j.getID());
         
@@ -169,9 +172,14 @@ void policy::Policy::printTraceAnalysis()
         starved = 0;
     }
 
-    avgTurn = avgTurn / this->trace.s.schedule.size(); //take the average
-    avgResp = avgResp / this->trace.s.schedule.size(); //take the average
-    avgFairness = avgFairness / this->trace.s.schedule.size();
+    // size() returns size_t (unsigned), and avgResp can be negative for
+    // policies that record start before arrival in some edge case; the
+    // implicit conversion to unsigned wraps and prints garbage. cast to
+    // int so the signed division stays signed.
+    int n = (int)this->trace.s.schedule.size();
+    avgTurn = avgTurn / n;
+    avgResp = avgResp / n;
+    avgFairness = avgFairness / n;
     
     if (policy::csvMode)
     {
