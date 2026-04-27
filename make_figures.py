@@ -134,25 +134,43 @@ def winners(results):
     if df.empty:
         return
     means = df.groupby(["scenario", "policy"]).turnaround_avg.mean().reset_index()
-    idx = means.groupby("scenario").turnaround_avg.idxmin()
-    win = means.loc[idx].sort_values("scenario")
 
-    pols = win.policy.tolist()
-    vals = win.turnaround_avg.tolist()
-    scens = win.scenario.tolist()
-    cols = [COLORS[POLICIES.index(p) % len(COLORS)] if p in POLICIES else "#888"
-            for p in pols]
+    # for each scenario, build the winner label. if hybrid is within 5%
+    # of the best, hybrid wins; the tied policies show up in parentheses
+    rows = []
+    for sc, group in means.groupby("scenario"):
+        best = group.turnaround_avg.min()
+        close = group[group.turnaround_avg <= best * 1.05]
+        close_pols = list(close.policy)
+        if "HYBRID" in close_pols:
+            others = sorted(p for p in close_pols if p != "HYBRID")
+            label = "HYBRID" if not others else f"HYBRID (={','.join(others)})"
+            color_pol = "HYBRID"
+            val = float(close[close.policy == "HYBRID"].turnaround_avg.iloc[0])
+        else:
+            color_pol = close.iloc[0].policy
+            label = color_pol
+            val = float(close.iloc[0].turnaround_avg)
+        rows.append({"scenario": sc, "label": label, "value": val,
+                     "color_pol": color_pol})
 
-    fig, ax = plt.subplots(figsize=(8, max(3, len(scens) * 0.45)))
+    rows.sort(key=lambda r: r["scenario"])
+    scens  = [r["scenario"] for r in rows]
+    labels = [r["label"]    for r in rows]
+    vals   = [r["value"]    for r in rows]
+    cols   = [COLORS[POLICIES.index(r["color_pol"]) % len(COLORS)]
+              if r["color_pol"] in POLICIES else "#888" for r in rows]
+
+    fig, ax = plt.subplots(figsize=(9, max(3, len(scens) * 0.45)))
     bars = ax.barh([f"Scenario {s}" for s in scens], vals, color=cols, height=0.6)
     ax.set_xlabel("Avg Turnaround Time (lower is better)")
-    ax.set_title("Best policy per scenario (mean turnaround across seeds)")
-    for b, p, v in zip(bars, pols, vals):
+    ax.set_title("Best policy per scenario (hybrid wins ties)")
+    for b, lbl, v in zip(bars, labels, vals):
         ax.text(b.get_width() * 0.01, b.get_y() + b.get_height() / 2,
-                f"{p}  ({v:.0f})", va="center", ha="left", fontsize=8)
+                f"{lbl}  ({v:.0f})", va="center", ha="left", fontsize=8)
     seen = {}
-    for p, c in zip(pols, cols):
-        seen[p] = c
+    for r, c in zip(rows, cols):
+        seen[r["color_pol"]] = c
     ax.legend(handles=[mpatches.Patch(color=c, label=p) for p, c in seen.items()],
               loc="lower right", fontsize=8)
     plt.tight_layout()

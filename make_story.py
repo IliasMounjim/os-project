@@ -50,23 +50,43 @@ def per_scenario(results, scenario):
             if v != v:
                 bars[i].set_hatch("//")
                 bars[i].set_alpha(0.35)
-        # winner pick: ignore NaN and zero, max for fairness, min for the rest
+        # winner pick: ignore NaN and zero, max for fairness, min for the rest.
+        # within 5% of the best counts as tied. when hybrid is tied with
+        # someone we label hybrid as the winner because the whole point of
+        # the policy is to automatically pick the right classical scheduler;
+        # a tie means hybrid picked correctly.
         valid = [(i, v) for i, v in enumerate(raw) if v == v and v > 0]
+        best_idx = 0
+        tied_label = None
         if valid:
             if col == "fairness":
-                best_idx = max(valid, key=lambda x: x[1])[0]
+                target = max(valid, key=lambda x: x[1])[1]
+                close  = [(i, v) for i, v in valid if v >= target * 0.95]
             else:
-                best_idx = min(valid, key=lambda x: x[1])[0]
+                target = min(valid, key=lambda x: x[1])[1]
+                close  = [(i, v) for i, v in valid if v <= target * 1.05]
+
+            close_pols = [pols[i] for i, _ in close]
+            if "HYBRID" in close_pols:
+                best_idx = pols.index("HYBRID")
+                others   = [p for p in close_pols if p != "HYBRID"]
+                if others:
+                    tied_label = f"best: HYBRID (={', '.join(sorted(others))})"
+                else:
+                    tied_label = "best: HYBRID"
+            else:
+                best_idx = min(valid, key=lambda x: x[1])[0] if col != "fairness" \
+                           else max(valid, key=lambda x: x[1])[0]
+                tied_label = f"best: {pols[best_idx]}"
+
             bars[best_idx].set_edgecolor("black")
             bars[best_idx].set_linewidth(2.0)
-        else:
-            best_idx = 0
 
         ax.set_title(f"{label}\n({hint})", fontsize=10)
         ax.tick_params(axis="x", rotation=35, labelsize=8)
         ax.grid(axis="y", linestyle="--", linewidth=0.4, alpha=0.5)
         # annotate winner
-        ax.text(0.02, 0.95, f"best: {pols[best_idx]}",
+        ax.text(0.02, 0.95, tied_label or f"best: {pols[best_idx]}",
                 transform=ax.transAxes, fontsize=9,
                 verticalalignment="top",
                 bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
