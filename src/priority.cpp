@@ -117,6 +117,9 @@ policy::Trace priorityRunJobs(Schedule s) {
         // If no job is currently running, select a job from the ready queue
         if(job_running == false) {
             if (readyQueue.schedule.empty() == false) {
+                // Add the break to trace
+                trace.addEvent(policy::Event(break_start, current_time));
+
                 // Retrieve the next job to run from the ready queue
                 running = priority_get_next_job(readyQueue);
                 job_running = true;
