@@ -90,7 +90,8 @@ policy::Trace RunJobs(Schedule s) {
         // If no jobs are available to run
         if(job_running == false && readyQueue.schedule.empty() == true) {
             job_running = false;
-            break_start = current_time;
+            if(break_start == 0)
+                break_start = current_time;
         }
         
         // If no job is currently running, select a job from the ready queue
@@ -98,6 +99,7 @@ policy::Trace RunJobs(Schedule s) {
             if (readyQueue.schedule.empty() == false) {
                 // Add the break to trace
                 trace.addEvent(policy::Event(break_start, current_time));
+                break_start = 0;
 
                 // Retrieve the next job to run from the ready queue
                 running = get_next_job(readyQueue);

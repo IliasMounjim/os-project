@@ -75,8 +75,10 @@ static Job lotteryNextJob(Schedule &readyQueue, std::uint64_t currTime,
     {
         Job next = readyQueue.schedule[idx];
         readyQueue.schedule.erase(readyQueue.schedule.begin() + idx);
-        if (noRunning)
+        if (noRunning){
             trace.addEvent(policy::Event(breakStart, currTime, -1));
+            breakStart = 0;
+        }
         noRunning = false;
         next.setStarted(true);
         next.setStart(currTime);
@@ -137,7 +139,7 @@ policy::Trace lotteryRunJobs(Schedule s, int quantum)
             }
             running = lotteryNextJob(readyQueue, currTime, noRunning,
                                      breakStart, trace);
-            if (noRunning) breakStart = currTime;
+            if (noRunning && breakStart == 0) breakStart = currTime;
             slice = 0;
         }
         // quantum expired, redraw
@@ -150,7 +152,7 @@ policy::Trace lotteryRunJobs(Schedule s, int quantum)
 
             running = lotteryNextJob(readyQueue, currTime, noRunning,
                                      breakStart, trace);
-            if (noRunning) breakStart = currTime;
+            if (noRunning && breakStart == 0) breakStart = currTime;
             slice = 0;
         }
 
@@ -165,7 +167,7 @@ policy::Trace lotteryRunJobs(Schedule s, int quantum)
 
             running = lotteryNextJob(readyQueue, currTime, noRunning,
                                      breakStart, trace);
-            if (noRunning) breakStart = currTime;
+            if (noRunning && breakStart == 0) breakStart = currTime;
             slice = 0;
         }
 

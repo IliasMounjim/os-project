@@ -98,8 +98,10 @@ policy::Trace rrRunJobs(Schedule s, int quantum)
             {
                 running = readyQueue.schedule[idx];
                 readyQueue.schedule.erase(readyQueue.schedule.begin() + idx);
-                if (noRunning)
+                if (noRunning){
                     trace.addEvent(policy::Event(breakStart, currTime, -1));
+                    breakStart = 0;
+                }
                 noRunning = false;
                 slice = 0;
                 // initialize start so a same-tick i/o block doesn't read garbage
@@ -109,7 +111,8 @@ policy::Trace rrRunJobs(Schedule s, int quantum)
             else
             {
                 noRunning  = true;
-                breakStart = currTime;
+                if(breakStart == 0)
+                    breakStart = currTime;
             }
         }
         // quantum used up — preempt, push to tail, pull next arrived

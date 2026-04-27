@@ -162,8 +162,10 @@ Job hybridNextJob(Schedule &readyQueue, std::uint64_t currTime, bool &noRunning,
     {
         Job next = readyQueue.schedule[idx];
         readyQueue.schedule.erase(readyQueue.schedule.begin() + idx);
-        if (noRunning)
+        if (noRunning){
             trace.addEvent(policy::Event(breakStart, currTime, -1));
+            breakStart = 0;
+        }
         noRunning = false;
         // initialize start now so a same-tick i/o block doesn't read garbage
         next.setStarted(true);
@@ -265,11 +267,12 @@ policy::Trace hybridRunJobs(Schedule s, int quantum)
                 running.setStatus(1);
                 trace.addEvent(policy::Event(running.getStart(), currTime,
                                              running.getID()));
+                breakStart = 0;
             }
             mode    = pickMode(readyQueue, currTime);
             running = hybridNextJob(readyQueue, currTime, noRunning,
                                     breakStart, trace, mode);
-            if (noRunning) breakStart = currTime;
+            if (noRunning && breakStart == 0) breakStart = currTime;
             slice = 0;
         }
         // quantum used up, only matters in RR mode
@@ -283,7 +286,7 @@ policy::Trace hybridRunJobs(Schedule s, int quantum)
             mode    = pickMode(readyQueue, currTime);
             running = hybridNextJob(readyQueue, currTime, noRunning,
                                     breakStart, trace, mode);
-            if (noRunning) breakStart = currTime;
+            if (noRunning && breakStart == 0) breakStart = currTime;
             slice = 0;
         }
 
@@ -299,7 +302,7 @@ policy::Trace hybridRunJobs(Schedule s, int quantum)
             mode    = pickMode(readyQueue, currTime);
             running = hybridNextJob(readyQueue, currTime, noRunning,
                                     breakStart, trace, mode);
-            if (noRunning) breakStart = currTime;
+            if (noRunning && breakStart == 0) breakStart = currTime;
             slice = 0;
         }
 
