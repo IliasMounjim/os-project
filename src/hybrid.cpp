@@ -1,17 +1,27 @@
-/*
- * hybrid.cpp - picks FCFS, SJF, or RR based on what the ready queue
- * looks like right now. Re-checks every time we need to make a
- * scheduling decision, so the policy can change as the workload shifts.
- *
- * Rules (first match wins):
- *   avg percentIO >= 15  -> RR    (i/o heavy, keep it responsive)
- *   CoV of bursts < 0.2  -> FCFS  (basically uniform, no point reordering)
- *   CoV > 1.5            -> SJF   (high variance, sjf wins big here)
- *   otherwise            -> RR
- *
- * CoV = stddev / mean of remaining burst lengths over the jobs that
- * have arrived. Thresholds are from the notes file.
- */
+// ========================================================================
+// hybrid.cpp
+// ------------------------------------------------------------------------
+// Description: Workload adaptive cpu scheduler. Looks at what's in the
+//   ready queue at every scheduling decision and switches between FCFS,
+//   SJF, and RR depending on the shape of the workload. The whole point
+//   is that no single classical policy is best on every workload, so the
+//   scheduler picks the right one for the current queue.
+//
+//   Rule (first match wins):
+//     avg percentIO of arrived jobs >= 15   -> RR    (i/o heavy)
+//     CoV of remaining bursts < 0.2         -> FCFS  (uniform)
+//     CoV > 1.5                             -> SJF   (high variance)
+//     otherwise                             -> RR    (default to fair)
+//
+//   CoV = stddev / mean of remaining burst lengths over jobs that have
+//   already arrived. Thresholds are from hybrid_scheduler_notes.md.
+//
+//   Re-evaluates the mode every time a job ends, blocks for i/o, or
+//   burns its quantum. Once a job is running it is not preempted.
+// ------------------------------------------------------------------------
+// Author: Illiasse Mounjim
+// Version: 2026.04.27
+// ========================================================================
 
 #include <algorithm>
 #include <cmath>
