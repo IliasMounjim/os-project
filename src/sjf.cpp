@@ -8,175 +8,199 @@
  * I/O model matches fcfs.cpp — each tick has a percentIO chance of
  * blocking, and blocked jobs sit out for a random duration in [0, 100).
  */
-
-#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
-#include <climits>
 #include <string>
 #include <vector>
-#include "schedule.h"
-#include "policy.h"
+
 #include "sjf.h"
 
 using namespace local;
 
-unsigned int const sjfIoRange = 100; // max i/o duration in ticks
+// Maximum IO Length
+unsigned int const IO_LENGTH_RANGE = 100;
 
-// bias-free rand in [0, range) — rejection sampling from cppreference
-unsigned sjfRand(unsigned range)
-{
+// Compare job length, returning true if a is longer than b
+bool sjf_compare_length(Job& a, Job& b) {
+    return a.getLength() < b.getLength();
+}
+
+// Compare job arrival, returning true if a arrived before b
+bool sjf_compare_arrival(Job& a, Job& b) {
+    return a.getArrival() < b.getArrival();
+}
+
+Job sjf_get_next_job(Schedule& s) {
+    Job next_job = s.schedule.front();
+    for(std::vector<Job>::iterator it = s.schedule.begin(); it != s.schedule.end(); it++) {
+        // If the job has a longer length, select it
+        if(sjf_compare_length(*it, next_job)) {
+            next_job = *it;
+
+        // If the same length, compare arrival time
+        } else if (it->getLength() == next_job.getLength()) {
+            if(sjf_compare_arrival(*it, next_job)) {
+                next_job = *it;
+            }
+        }
+    }
+
+    return next_job;
+}
+
+// Generate a random number in the range [0, range)
+// Same method as implemented in FCFS.cpp
+unsigned sjf_bounded_rand(unsigned range) {
     for (unsigned x, r;;)
         if (x = rand(), r = x % range, x - r <= -range)
             return r;
 }
 
-// scan the ready queue for the shortest job that has already arrived.
-// returns index into q.schedule, or -1 if nothing is eligible yet.
-int pickShortest(Schedule &q, std::uint64_t t)
-{
-    int pick   = -1;
-    int minLen = INT_MAX;
+policy::Trace sjfRunJobs(Schedule s) {
 
-    for (int i = 0; i < (int)q.schedule.size(); i++)
-    {
-        if (q.schedule[i].getArrival() <= (int)t &&
-            q.schedule[i].getLength()  <  minLen)
-        {
-            minLen = q.schedule[i].getLength();
-            pick   = i;
-        }
-    }
-    return pick;
-}
+    // Initialize the three queues
+    Schedule unarrivedQueue = Schedule(s); // Jobs that have not yet arrived
+    Schedule readyQueue = Schedule(); // Jobs that are ready to run
+    Schedule blockedQueue = Schedule(); // Jobs that are blocked for I/O
 
-// pull the shortest eligible job out of the ready queue.
-// if nothing is available, sets noRunning and returns a dummy job.
-// also logs idle gaps (jobID = -1) so analysis can compute utilization.
-Job sjfNextJob(Schedule &readyQueue, std::uint64_t currTime, bool &noRunning,
-               std::uint64_t breakStart, policy::Trace &trace)
-{
-    int idx = pickShortest(readyQueue, currTime);
+    // Retrieve the number of jobs and track finished jobs
+    int total_jobs = s.schedule.size();
+    int finished_jobs = 0;
 
-    if (idx >= 0)
-    {
-        Job next = readyQueue.schedule[idx];
-        readyQueue.schedule.erase(readyQueue.schedule.begin() + idx);
+    // Currently running job, set to a dummy job
+    Job running = Job(-1, 0, 0, 0, 1);
+    
+    // Track if we have a running job or not
+    bool job_running = false;
+                                                           
+    std::uint64_t current_time = 0;
+    std::uint64_t break_start = 0;
 
-        if (noRunning) // cpu was idle — close the gap event
-            trace.addEvent(policy::Event(breakStart, currTime, -1));
-
-        noRunning = false;
-        return next;
-    }
-
-    // nothing to run yet
-    noRunning = true;
-    return Job(-1, 0, 0, 0, 1);
-}
-
-// main simulation loop — tick-based discrete event sim.
-// each tick: execute -> check completion -> check i/o -> unblock -> advance
-policy::Trace sjfRunJobs(Schedule s)
-{
-    Schedule readyQueue   = Schedule(s);
-    Schedule blockedQueue = Schedule();
-    policy::Trace trace   = policy::Trace();
-
+    // Initialize trace to record events and return at end
+    policy::Trace trace = policy::Trace();
     trace.s = s;
 
-    // sort by arrival so we start with the earliest job
-    std::sort(readyQueue.schedule.begin(), readyQueue.schedule.end(),
-        [](Job a, Job b) { return a.getArrival() < b.getArrival(); });
+    // Used for printing info
+    int itemNumber = 0;
 
-    // bootstrap — first arrived job starts running immediately
-    Job running = readyQueue.schedule.front();
-    readyQueue.schedule.erase(readyQueue.schedule.begin());
+    // While not all jobs are finished
+    while(finished_jobs < total_jobs) {
 
-    bool          noRunning  = false;
-    std::uint64_t currTime   = 0;
-    std::uint64_t breakStart = 0;
-
-    while (!readyQueue.schedule.empty() || !blockedQueue.schedule.empty())
-    {
-        if (currTime == UINT64_MAX)
-        {
+        // Prevent integer overflow of timer
+        if(current_time == UINT64_MAX){
             std::cout << "Ran too long, terminating" << std::endl;
             exit(2);
         }
 
-        // mark the first tick this job actually starts running
-        if (!running.getStarted() && !noRunning)
-        {
-            running.setStarted(true);
-            running.setStart(currTime);
-        }
+        // Retrieve arrived jobs and add to ready queue
+        for (std::vector<Job>::iterator it = unarrivedQueue.schedule.begin(); it != unarrivedQueue.schedule.end();) {
+            // Check if the current job has arrived
+            if (it->getArrival() <= current_time) {
 
-        // execute one tick
-        if (!noRunning)
-            running.decrementLength();
-
-        // job finished — log it, pick the next shortest
-        if (running.getLength() <= 0)
-        {
-            if (!noRunning)
-            {
-                running.setStatus(1);
-                trace.addEvent(policy::Event(running.getStart(), currTime,
-                                             running.getID()));
-            }
-            running = sjfNextJob(readyQueue, currTime, noRunning,
-                                 breakStart, trace);
-            if (noRunning)
-                breakStart = currTime;
-        }
-
-        // i/o interrupt — stochastic, same model as fcfs
-        if (sjfRand(100) < running.getPercentIO() && !noRunning)
-        {
-            trace.addEvent(policy::Event(running.getStart(), currTime,
-                                         running.getID()));
-            running.setStarted(false);
-            running.setIOEnd((int)(sjfRand(sjfIoRange) + currTime));
-            blockedQueue.schedule.push_back(running);
-
-            running = sjfNextJob(readyQueue, currTime, noRunning,
-                                 breakStart, trace);
-            if (noRunning)
-                breakStart = currTime;
-        }
-
-        // move jobs whose i/o finished back to ready
-        for (auto it = blockedQueue.schedule.begin();
-             it != blockedQueue.schedule.end(); )
-        {
-            if (currTime == (*it).getIOEnd())
-            {
+                // Add the job to the ready queue
                 readyQueue.schedule.push_back(*it);
-                it = blockedQueue.schedule.erase(it);
-            }
-            else
+
+                // Remove the job from the unarrived queue
+                it = unarrivedQueue.schedule.erase(it);
+            
+            } else {
                 it++;
+            }
         }
 
-        currTime++;
+        // If no jobs are available to run
+        if(job_running == false && readyQueue.schedule.empty() == true) {
+            job_running = false;
+            break_start = current_time;
+        }
+        
+        // If no job is currently running, select a job from the ready queue
+        if(job_running == false) {
+            if (readyQueue.schedule.empty() == false) {
+                // Retrieve the next job to run from the ready queue
+                running = sjf_get_next_job(readyQueue);
+                job_running = true;
 
-        if (currTime % 500 == 0)
+                // Start the next job
+                running.setStarted(true);
+                running.setStart(current_time);
+
+                // Remove the job from the ready queue
+                for (std::vector<Job>::iterator it = readyQueue.schedule.begin(); it != readyQueue.schedule.end();) {
+                    if (it->getID() == running.getID()) {
+                        it = readyQueue.schedule.erase(it);
+                    } else {
+                        it++;
+                    }
+                }
+
+            }
+        }
+        
+        // If there is a job running and we are not preempting it
+        if(job_running == true) {
+            running.decrementLength();
+        }
+
+        // If the running job has finished
+        if(running.getLength() <= 0) {
+            if(job_running == true) {
+                running.setStatus(1); // Set to finished
+                trace.addEvent(policy::Event(running.getStart(), current_time, running.getID())); // Add finish event to trace
+                finished_jobs++; // Increment finished job counter
+                
+                // Set running to a dummy job
+                running = Job(-1, 0, 0, 0, 1);
+                job_running = false;
+            }
+        }
+        
+        // If the job has an IO event
+        if(job_running == true && sjf_bounded_rand(100) < running.getPercentIO()) {
+
+            trace.addEvent(policy::Event(running.getStart(), current_time, running.getID())); // Add event to trace
+            running.setStarted(false); // Job not running while blocked
+            running.setIOEnd((int) (sjf_bounded_rand(IO_LENGTH_RANGE) + current_time)); // Set IO end time
+            blockedQueue.schedule.push_back(running); // Add the blocked job to the correct queue
+
+            // Set running to a dummy job
+            running = Job(-1, 0, 0, 0, 1);
+            job_running = false;
+
+        }
+
+        // If there are jobs in the blocked queue
+        if(!blockedQueue.schedule.empty()) {
+
+            for(std::vector<Job>::iterator it = blockedQueue.schedule.begin(); it != blockedQueue.schedule.end();) {
+                // Check if the job is done with IO
+                if(current_time >= it->getIOEnd()) {
+                    // Add job back to the ready queue
+                    readyQueue.schedule.push_back(*it);
+                    it = blockedQueue.schedule.erase(it);
+                } else {
+                    it++;
+                }
+            }
+        }
+
+        // Increment time
+        current_time++;
+
+        if(current_time % 500 == 0) //in case it takes a while to run, shows something and gives you a bit of info
         {
-            if (currTime % 100000 == 0)
-                std::cout << "... t=" << currTime
-                          << " remaining="
-                          << readyQueue.schedule.size()
-                             + blockedQueue.schedule.size()
-                          << "\r";
+            if(current_time % 100000 == 0)
+            {
+                itemNumber = readyQueue.schedule.size() + blockedQueue.schedule.size();
+            }
+            std::cout << "... " << std::to_string(current_time) << " c:" << std::to_string(itemNumber) << " l:" << std::to_string(running.getLength()) << " r:" << std::to_string(!job_running) << "\r";
         }
     }
 
     return trace;
 }
 
-policy::Policy policy::SJF::evaluate(Schedule s)
-{
+policy::Policy policy::SJF::evaluate(Schedule s) {
     return policy::Policy("SJF", sjfRunJobs(s), 0);
 }
