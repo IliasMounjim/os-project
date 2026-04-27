@@ -1,3 +1,20 @@
+// ========================================================================
+// lottery.cpp
+// ------------------------------------------------------------------------
+// Description: Ticket-based randomized scheduler. Each arrived job gets
+//   tickets equal to (priority + 1), then on every scheduling decision
+//   we draw a random ticket and run the job that owns it. Preemptive
+//   with a quantum, same shape as RR.
+//
+//   Original code in this file was unfinished: runJobs called .front()
+//   on an empty queue (never bootstrapped readyQueue), and the ticket
+//   logic was missing (totalTickets was declared but never used).
+//   Rewrote so it actually links and produces sensible numbers.
+// ------------------------------------------------------------------------
+// Author: Illiasse Mounjim
+// Version: 2026.04.27
+// ========================================================================
+
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -10,151 +27,171 @@
 
 using namespace local;
 
-unsigned int const ioLengthRange = 100; //max io length
-unsigned int const totalTickets = 1000; //arbitrary, meant to be tuned
+unsigned int const ioLengthRange = 100; // max i/o duration in ticks
 
-bool comp(Job a, Job b) //compares arrival so it goes first come first served
-{
-    return a.getArrival() < b.getArrival();
-}
-
-unsigned bounded_rand(unsigned range)
-{ //as printed in cppreference on the std::rand page
+static unsigned bounded_rand(unsigned range)
+{ // as printed in cppreference on the std::rand page
+    if (range == 0) return 0;
     for (unsigned x, r;;)
         if (x = rand(), r = x % range, x - r <= -range)
             return r;
 }
 
-policy::Trace runJobs(Schedule& s)
+// give each job a number of tickets weighted by priority. higher priority
+// gets more tickets so it's more likely to win the draw.
+static int ticketsFor(Job &j) { return j.getPriority() + 1; }
+
+// run a ticket draw over arrived jobs in the ready queue. returns the
+// index of the winner, or -1 if nothing is eligible.
+static int lotteryDraw(Schedule &q, std::uint64_t t)
 {
-    Schedule arriving = Schedule(s);
-    Schedule readyQueue = Schedule(); //all jobs are added to the ready queue after having been sorted appropriatly
-    Schedule blockedQueue = Schedule(); //starts empty
-    Job running = Job(readyQueue.schedule.front()); //on FCFS we start running 
-    readyQueue.schedule.erase(readyQueue.schedule.begin()); //running job leaves queue
-    
-    bool noRunning = false; //nothing running, waiting for blocked
+    int total = 0;
+    for (Job j : q.schedule)
+        if (j.getArrival() <= (int)t)
+            total += ticketsFor(j);
 
-    std::sort(readyQueue.schedule.begin(), readyQueue.schedule.end(), comp); //sort by arrival, it's first come first served, speed up runtime
-                                                           
-    std::uint64_t currTime = 0;
-    std::uint64_t breakStart = 0;
-    policy::Trace trace = policy::Trace();
-    trace.s = s;
+    if (total <= 0) return -1;
 
-    int itemNumber = 0;
-
-    for(std::vector<Job>::iterator it = arriving.schedule.begin(); it < arriving.schedule.end(); it++)
-    { //everything that has arrived moves to ready
-        if((*it).getArrival() <= currTime)
+    int winner = (int)bounded_rand((unsigned)total);
+    int sum    = 0;
+    for (int i = 0; i < (int)q.schedule.size(); i++)
+    {
+        if (q.schedule[i].getArrival() <= (int)t)
         {
-            readyQueue.schedule.push_back(*it);
-            arriving.schedule.erase(it);
+            sum += ticketsFor(q.schedule[i]);
+            if (sum > winner) return i;
         }
     }
+    return -1;
+}
 
-    while(!readyQueue.schedule.empty() || !blockedQueue.schedule.empty()) //we're going until we work through all viable jobs
+// pull the winning job out of ready and close any open idle gap
+static Job lotteryNextJob(Schedule &readyQueue, std::uint64_t currTime,
+                          bool &noRunning, std::uint64_t breakStart,
+                          policy::Trace &trace)
+{
+    int idx = lotteryDraw(readyQueue, currTime);
+    if (idx >= 0)
     {
-        if(currTime == UINT64_MAX) //escape so that currTime doesn't overflow
+        Job next = readyQueue.schedule[idx];
+        readyQueue.schedule.erase(readyQueue.schedule.begin() + idx);
+        if (noRunning)
+            trace.addEvent(policy::Event(breakStart, currTime, -1));
+        noRunning = false;
+        next.setStarted(true);
+        next.setStart(currTime);
+        return next;
+    }
+    noRunning = true;
+    return Job(-1, 0, 0, 0, 1);
+}
+
+// main loop. tick-based, preemptive on quantum boundaries like RR.
+policy::Trace lotteryRunJobs(Schedule s, int quantum)
+{
+    Schedule readyQueue   = Schedule(s);
+    Schedule blockedQueue = Schedule();
+    policy::Trace trace   = policy::Trace();
+
+    trace.s = s;
+
+    std::sort(readyQueue.schedule.begin(), readyQueue.schedule.end(),
+        [](Job a, Job b) { return a.getArrival() < b.getArrival(); });
+
+    Job running    = readyQueue.schedule.front();
+    readyQueue.schedule.erase(readyQueue.schedule.begin());
+    bool noRunning  = false;
+    std::uint64_t currTime   = 0;
+    std::uint64_t breakStart = 0;
+    int           slice      = 0;
+
+    while (!readyQueue.schedule.empty() || !blockedQueue.schedule.empty()
+           || (!noRunning && running.getLength() > 0))
+    {
+        if (currTime == UINT64_MAX)
         {
             std::cout << "Ran too long, terminating" << std::endl;
             exit(2);
         }
-        
-        if(!running.getStarted() && !noRunning) //if not started, start, and only if we've got something to start
-        { //second trigger shoudl never matter, don't want to test
-            running.setStarted(true); //a gate to make sure we know only when the start is
+
+        if (!running.getStarted() && !noRunning)
+        {
+            running.setStarted(true);
             running.setStart(currTime);
         }
-        
-        if(!noRunning) //if we're running a job
+
+        if (!noRunning)
         {
-            running.decrementLength(); // the current running is closer to over
+            running.decrementLength();
+            slice++;
         }
 
-        if(running.getLength() <= 0) //if currently running is done
+        // job done
+        if (running.getLength() <= 0)
         {
-            if(!noRunning) //if we were runnign to begin with
+            if (!noRunning)
             {
-                running.setStatus(1); //set running to done
-                trace.addEvent(policy::Event(running.getStart(), currTime, running.getID())); //add the relevant event to trace
-                std::sort(readyQueue.schedule.begin(), readyQueue.schedule.end(), comp); //sort by arrival, it's first come first served
+                running.setStatus(1);
+                trace.addEvent(policy::Event(running.getStart(), currTime,
+                                             running.getID()));
             }
-            if(!readyQueue.schedule.empty() && readyQueue.schedule.front().getArrival() <= currTime) //if there's something to run that has arrived already
-            {
-                running = readyQueue.schedule.front(); //ready to running
-                readyQueue.schedule.erase(readyQueue.schedule.begin()); //running out of ready
-                if(noRunning)
-                {
-                    trace.addEvent(policy::Event(breakStart, currTime, -1));
-                }
-                noRunning = false;
-            }
-            else //there's nothing to run
-            {
-                noRunning = true;
-                breakStart = currTime;
-            }
+            running = lotteryNextJob(readyQueue, currTime, noRunning,
+                                     breakStart, trace);
+            if (noRunning) breakStart = currTime;
+            slice = 0;
         }
-        
-        //we do io after the above to avoid a loop where jobs enter and exit blocked near infinitely (a job ending before io is preferable)
-        //likewise why we block before we remove from blocked, no grand loops
-        if(bounded_rand(100) < running.getPercentIO() && !noRunning) //if we got an io moment and we've got a running job
+        // quantum expired, redraw
+        else if (slice >= quantum && !noRunning)
         {
-            trace.addEvent(policy::Event(running.getStart(), currTime, running.getID())); //the job ran until now
-            running.setStarted(false); //the job is no longer running
-            running.setIOEnd((int) (bounded_rand(ioLengthRange) + currTime)); //set ioEnd to the right number 
-            blockedQueue.schedule.push_back(running); //add the blocked job to the correct queue
+            trace.addEvent(policy::Event(running.getStart(), currTime,
+                                         running.getID()));
+            running.setStarted(false);
+            readyQueue.schedule.push_back(running);
 
-            if(!readyQueue.schedule.empty() && readyQueue.schedule.front().getArrival() <= currTime) //if we still have readied up jobs that have arrived
-            {
-                running = readyQueue.schedule.front(); //push the next to run to run
-                readyQueue.schedule.erase(readyQueue.schedule.begin()); //the running is no longer ready
-            }
-            else //set running to a temp, what was running still has work to do
-            {
-                running = Job(-1, 0, 0, 0, 1);
-                noRunning = true; //we've got nothing to run from here
-            }
+            running = lotteryNextJob(readyQueue, currTime, noRunning,
+                                     breakStart, trace);
+            if (noRunning) breakStart = currTime;
+            slice = 0;
         }
 
-        if(!blockedQueue.schedule.empty())
+        // i/o block
+        if (bounded_rand(100) < (unsigned)running.getPercentIO() && !noRunning)
         {
-            for(std::vector<Job>::iterator it = blockedQueue.schedule.begin(); it != blockedQueue.schedule.end(); it++) //for each blocked job
-            { //blocked to ready
-                if(currTime == (*it).getIOEnd()) //if the job at it is done with i/o
-                {
-                    readyQueue.schedule.push_back(*it);
-                    blockedQueue.schedule.erase(it);
-                    
-                    if(blockedQueue.schedule.empty()) //makes sure erasing it doesn't cause issues
-                    {
-                        break;
-                    }
+            trace.addEvent(policy::Event(running.getStart(), currTime,
+                                         running.getID()));
+            running.setStarted(false);
+            running.setIOEnd((int)(bounded_rand(ioLengthRange) + currTime));
+            blockedQueue.schedule.push_back(running);
 
-                    it = blockedQueue.schedule.begin(); //won't go out of bounds, multipule passes of the same thing is better than going OOB
-                }
+            running = lotteryNextJob(readyQueue, currTime, noRunning,
+                                     breakStart, trace);
+            if (noRunning) breakStart = currTime;
+            slice = 0;
+        }
+
+        // unblock i/o-finished jobs
+        for (auto it = blockedQueue.schedule.begin();
+             it != blockedQueue.schedule.end(); )
+        {
+            if (currTime == (std::uint64_t)(*it).getIOEnd())
+            {
+                readyQueue.schedule.push_back(*it);
+                it = blockedQueue.schedule.erase(it);
             }
+            else
+                it++;
         }
 
         currTime++;
 
-        for(std::vector<Job>::iterator it = arriving.schedule.begin(); it < arriving.schedule.end(); it++)
-        { //everything that has arrived moves to ready
-            if((*it).getArrival() <= currTime)
-            {
-                readyQueue.schedule.push_back(*it);
-                arriving.schedule.erase(it);
-            }
-        }
-
-        if(currTime % 500 == 0) //in case it takes a while to run, shows something and gives you a bit of info
+        if (currTime % 500 == 0)
         {
-            if(currTime % 100000 == 0)
-            {
-                itemNumber = readyQueue.schedule.size() + blockedQueue.schedule.size();
-            }
-            std::cout << "... " << std::to_string(currTime) << " c:" << std::to_string(itemNumber) << " l:" << std::to_string(running.getLength()) << " r:" << std::to_string(noRunning) << "\r";
+            if (currTime % 100000 == 0)
+                std::cout << "... t=" << currTime
+                          << " remaining="
+                          << readyQueue.schedule.size()
+                             + blockedQueue.schedule.size()
+                          << "\r";
         }
     }
 
@@ -163,5 +200,5 @@ policy::Trace runJobs(Schedule& s)
 
 policy::Policy policy::LOTTERY::evaluate(Schedule s)
 {
-    return policy::Policy("LOTTERY", runJobs(s), 0);
+    return policy::Policy("LOTTERY", lotteryRunJobs(s, quantum), quantum);
 }

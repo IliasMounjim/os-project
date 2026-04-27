@@ -5,6 +5,8 @@
 #include <vector>
 #include "schedule.h"
 
+namespace local { namespace policy { extern bool csvMode; } }
+
 namespace local {
     namespace policy {
         class Event
