@@ -13,12 +13,12 @@ using namespace local;
 unsigned int const ioLengthRange = 100; //max io length
 unsigned int const totalTickets = 1000; //arbitrary, meant to be tuned
 
-bool comp(Job a, Job b) //compares arrival so it goes first come first served
+static bool comp(Job a, Job b) //compares arrival so it goes first come first served
 {
     return a.getArrival() < b.getArrival();
 }
 
-unsigned bounded_rand(unsigned range)
+static unsigned bounded_rand(unsigned range)
 { //as printed in cppreference on the std::rand page
     for (unsigned x, r;;)
         if (x = rand(), r = x % range, x - r <= -range)
