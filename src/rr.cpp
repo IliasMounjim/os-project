@@ -32,6 +32,16 @@ unsigned rrRand(unsigned range)
             return r;
 }
 
+// find the first job in the ready queue whose arrival has happened.
+// returns -1 if nothing has arrived yet, in which case the cpu sits idle.
+static int rrFirstArrived(Schedule &q, std::uint64_t t)
+{
+    for (int i = 0; i < (int)q.schedule.size(); i++)
+        if (q.schedule[i].getArrival() <= (int)t)
+            return i;
+    return -1;
+}
+
 // main simulation loop for round robin.
 // same tick structure as sjf, but adds quantum-based preemption.
 policy::Trace rrRunJobs(Schedule s, int quantum)
@@ -83,11 +93,11 @@ policy::Trace rrRunJobs(Schedule s, int quantum)
                                              running.getID()));
             }
 
-            if (!readyQueue.schedule.empty() &&
-                readyQueue.schedule.front().getArrival() <= currTime)
+            int idx = rrFirstArrived(readyQueue, currTime);
+            if (idx >= 0)
             {
-                running = readyQueue.schedule.front();
-                readyQueue.schedule.erase(readyQueue.schedule.begin());
+                running = readyQueue.schedule[idx];
+                readyQueue.schedule.erase(readyQueue.schedule.begin() + idx);
                 if (noRunning)
                     trace.addEvent(policy::Event(breakStart, currTime, -1));
                 noRunning = false;
@@ -102,7 +112,7 @@ policy::Trace rrRunJobs(Schedule s, int quantum)
                 breakStart = currTime;
             }
         }
-        // quantum used up — preempt, push to tail, pull from front
+        // quantum used up — preempt, push to tail, pull next arrived
         else if (slice >= quantum && !noRunning)
         {
             trace.addEvent(policy::Event(running.getStart(), currTime,
@@ -110,13 +120,22 @@ policy::Trace rrRunJobs(Schedule s, int quantum)
             running.setStarted(false);
             readyQueue.schedule.push_back(running); // back of the line
 
-            running = readyQueue.schedule.front();  // next in line
-            readyQueue.schedule.erase(readyQueue.schedule.begin());
-            noRunning = false;
-            slice = 0;
-            // same fix as above, see comment
-            running.setStarted(true);
-            running.setStart(currTime);
+            int idx = rrFirstArrived(readyQueue, currTime);
+            if (idx >= 0)
+            {
+                running = readyQueue.schedule[idx];
+                readyQueue.schedule.erase(readyQueue.schedule.begin() + idx);
+                noRunning = false;
+                slice = 0;
+                running.setStarted(true);
+                running.setStart(currTime);
+            }
+            else
+            {
+                running   = Job(-1, 0, 0, 0, 1);
+                noRunning = true;
+                breakStart = currTime;
+            }
         }
 
         // i/o block — stochastic, same model as sjf/fcfs
@@ -128,11 +147,11 @@ policy::Trace rrRunJobs(Schedule s, int quantum)
             running.setIOEnd((int)(rrRand(rrIoRange) + currTime));
             blockedQueue.schedule.push_back(running);
 
-            if (!readyQueue.schedule.empty() &&
-                readyQueue.schedule.front().getArrival() <= currTime)
+            int idx = rrFirstArrived(readyQueue, currTime);
+            if (idx >= 0)
             {
-                running = readyQueue.schedule.front();
-                readyQueue.schedule.erase(readyQueue.schedule.begin());
+                running = readyQueue.schedule[idx];
+                readyQueue.schedule.erase(readyQueue.schedule.begin() + idx);
                 slice = 0;
                 running.setStarted(true);
                 running.setStart(currTime);
@@ -141,6 +160,7 @@ policy::Trace rrRunJobs(Schedule s, int quantum)
             {
                 running   = Job(-1, 0, 0, 0, 1);
                 noRunning = true;
+                breakStart = currTime;
             }
         }
 
