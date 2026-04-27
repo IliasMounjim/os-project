@@ -14,6 +14,7 @@
 #include "ljf.h"
 #include "priority.h"
 #include "hybrid.h"
+#include "lottery.h"
 
 using namespace local;
 
@@ -261,6 +262,12 @@ int main(int argc, char **args)
             policy::Policy toPrint = p.evaluate(s);
             toPrint.printTraceAnalysis();
         }
+        else if(policyName == "LOTTERY")
+        {
+            policy::LOTTERY p = policy::LOTTERY(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
         else
         {}
 
@@ -312,6 +319,12 @@ int main(int argc, char **args)
         else if(policyName == "HYBRID")
         {
             policy::Hybrid p = policy::Hybrid(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
+        else if(policyName == "LOTTERY")
+        {
+            policy::LOTTERY p = policy::LOTTERY(policyName, policy::Trace(), quantum);
             policy::Policy toPrint = p.evaluate(s);
             toPrint.printTraceAnalysis();
         }
