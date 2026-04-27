@@ -13,6 +13,7 @@
 #include "srtf.h"
 #include "ljf.h"
 #include "priority.h"
+#include "hybrid.h"
 
 using namespace local;
 
@@ -89,6 +90,14 @@ int main(int argc, char **args)
     std::vector<std::string>::iterator ioFlag = std::find(arg.begin(), arg.end(), "-i");
     std::vector<std::string>::iterator jsonFlag = std::find(arg.begin(), arg.end(), "-j");
     std::vector<std::string>::iterator helpFlag = std::find(arg.begin(), arg.end(), "-h");
+    std::vector<std::string>::iterator csvFlag  = std::find(arg.begin(), arg.end(), "--csv");
+    std::vector<std::string>::iterator seedFlag = std::find(arg.begin(), arg.end(), "-s");
+    if (csvFlag != arg.end()) policy::csvMode = true;
+    // default seed 0 so single runs are deterministic; pass -s N to vary it
+    int seedVal = 0;
+    if (seedFlag != arg.end() && (seedFlag+1) != arg.end())
+        seedVal = intUserInput(*(seedFlag+1));
+    srand((unsigned)seedVal);
 
     bool isRandom = false;
     std::string policyName;
@@ -246,9 +255,15 @@ int main(int argc, char **args)
             policy::Policy toPrint = p.evaluate(s);
             toPrint.printTraceAnalysis();
         }
+        else if(policyName == "HYBRID")
+        {
+            policy::Hybrid p = policy::Hybrid(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
         else
         {}
-        
+
         return 0;
     }
     else if(isRandom)
@@ -291,6 +306,12 @@ int main(int argc, char **args)
         else if(policyName == "PRIORITY")
         {
             policy::Priority p = policy::Priority(policyName, policy::Trace(), quantum);
+            policy::Policy toPrint = p.evaluate(s);
+            toPrint.printTraceAnalysis();
+        }
+        else if(policyName == "HYBRID")
+        {
+            policy::Hybrid p = policy::Hybrid(policyName, policy::Trace(), quantum);
             policy::Policy toPrint = p.evaluate(s);
             toPrint.printTraceAnalysis();
         }

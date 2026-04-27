@@ -8,6 +8,8 @@ using namespace local;
 
 int starvationThreshold = 500; // adjustable starvation threshold
 
+namespace local { namespace policy { bool csvMode = false; } }
+
 void policy::Trace::addEvent(policy::Event e)
 {
     policy::Trace t = *this;
@@ -107,10 +109,12 @@ std::string toString(policy::Policy s)
 
 void policy::Policy::printTraceAnalysis()
 {
+    // in csv mode we still emit the trace events (python needs them for
+    // gantt charts) but skip the human-readable schedule dump
     std::string str = toString(*this);
     std::cout << str << std::endl;
 
-    this->trace.s.printSchedule();
+    if (!policy::csvMode) this->trace.s.printSchedule();
 
     //tests past here
     int avgTurn = 0;        // average turnabout time
@@ -150,7 +154,8 @@ void policy::Policy::printTraceAnalysis()
             starved = 1;
         }
         
-        std::cout << "Job " << j.getID() << " - Response Time: " << resp << ", Turnabout Time: " << turn << ", Unfairness: " << unfairness << ", Starved: " << starved <<std::endl; 
+        if (!policy::csvMode)
+            std::cout << "Job " << j.getID() << " - Response Time: " << resp << ", Turnabout Time: " << turn << ", Unfairness: " << unfairness << ", Starved: " << starved <<std::endl;
         
         avgResp += resp; //add together the response times
         avgTurn += turn; //add together all turnabouts
@@ -168,12 +173,27 @@ void policy::Policy::printTraceAnalysis()
     avgResp = avgResp / this->trace.s.schedule.size(); //take the average
     avgFairness = avgFairness / this->trace.s.schedule.size();
     
-    std::cout << std::endl;
-    std::cout << "Turnabout time - " << "(Average: " << avgTurn << ", Maximum: " << maxTurn << ")" << std::endl;
-    std::cout << "Response time - " << "(Average: " << avgResp << ", Maximum: " << maxResp << ")" << std::endl;
-    std::cout << "Fairness: " << avgFairness << std::endl;
-    std::cout << "Instances of Starvation: " << starvation << std::endl;
-    std::cout << "Overhead from Context Switches: " << contextSwitches * contextSwitchTime << std::endl;
-    
+    if (policy::csvMode)
+    {
+        // METRICS,policy,turn_avg,turn_max,resp_avg,resp_max,fairness,starvation,ctx_overhead,jobs
+        std::cout << "METRICS,"
+                  << this->name << ","
+                  << avgTurn << "," << maxTurn << ","
+                  << avgResp << "," << maxResp << ","
+                  << avgFairness << ","
+                  << starvation << ","
+                  << contextSwitches * contextSwitchTime << ","
+                  << this->trace.s.schedule.size() << std::endl;
+    }
+    else
+    {
+        std::cout << std::endl;
+        std::cout << "Turnabout time - " << "(Average: " << avgTurn << ", Maximum: " << maxTurn << ")" << std::endl;
+        std::cout << "Response time - " << "(Average: " << avgResp << ", Maximum: " << maxResp << ")" << std::endl;
+        std::cout << "Fairness: " << avgFairness << std::endl;
+        std::cout << "Instances of Starvation: " << starvation << std::endl;
+        std::cout << "Overhead from Context Switches: " << contextSwitches * contextSwitchTime << std::endl;
+    }
+
     return;
 }
