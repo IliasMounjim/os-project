@@ -19,7 +19,7 @@ or burns its quantum). Non-preemptive once a job is running.
 
 ## Setup
 
-1090 total runs. 30 random seeds for the 5 i/o scenarios (rand actually
+1120 total runs. 30 random seeds for the 5 i/o scenarios (rand actually
 fires there). 1 seed for the rest, deterministic. Ran 7 policies (FCFS,
 SJF, SRTF, LJF, RR, PRIORITY, HYBRID) on 15 scenarios.
 
@@ -44,7 +44,8 @@ and 1 = worst. Hybrid is bold pink. It sits at the bottom on 1 through
 
 For each scenario, rank policies 1..7 by avg turnaround. Average that
 rank across all 15. Closer to 1 means more consistently good. SRTF wins
-overall (1.07). Hybrid ties SJF at 1.53. RR is last at 6.20.
+overall (1.13). FCFS and SJF tie at 1.33. Hybrid is 4th at 1.67. RR is
+last at 6.33.
 
 ### Best policy per scenario
 
@@ -58,9 +59,9 @@ all tie. The chart picks FCFS alphabetically when there's a tie.
 
 ![coverage](analysis/figures/coverage.png)
 
-Green = produced valid metrics. Red = crashed or hung. Two red rows:
-FCFS on scenario 14 (iterator bug in the i/o unblock loop) and LOTTERY
-everywhere (the function is unfinished in the original repo).
+Green = produced valid metrics. Red = failed. Only LOTTERY is red,
+everywhere; the function is unfinished in the original repo so the
+runs leave it out.
 
 ---
 
@@ -174,9 +175,10 @@ quantum slicing. Everyone else runs Job 0 to completion first.
 
 ### Scenario 14 - 8 jobs with 30-50% i/o
 
-Heavy i/o. Tests where RR and HYBRID should shine. Winner: SRTF (3383).
-Preempts to keep the shortest remaining job on the cpu, and the i/o
-blocks naturally interleave the work.
+Heavy i/o. Tests where RR and HYBRID should shine. Winner: FCFS (3375)
+narrowly over SRTF (3383). The i/o blocks naturally interleave the
+jobs, so simple ordering ends up close to optimal here. Hybrid (4935)
+loses on context-switch overhead from RR mode.
 
 ![story](analysis/figures/story_scenario14.png)
 ![gantt](analysis/figures/gantt_scenario14.png)
@@ -205,8 +207,9 @@ because those are the only ones where the seed changes anything.
 ### Response
 ![response comparison](analysis/figures/comparison_response.png)
 
-RR's bars look weird because RR has an integer-underflow bug in its
-response_avg metric. The story plots hatch those out.
+RR's bars are near zero on every scenario. That is correct, RR's whole
+job is to keep response time low by cycling through the ready queue
+fast. LJF stands out as the worst by a wide margin.
 
 ### Fairness
 ![fairness comparison](analysis/figures/comparison_fairness.png)
@@ -231,18 +234,18 @@ existed. Showing the same data without the error bars.
 | within 5% of best policy | 12 of 15 scenarios |
 | sole winner | 0 |
 | worst (rank 7) | 0 |
-| mean rank across 15 | 1.53 (tied 3rd with SJF) |
+| mean rank across 15 | 1.67 (4th place) |
 
 The 3 scenarios where hybrid loses meaningfully:
 
 | # | hybrid | best | gap | reason |
 |---|---|---|---|---|
-| 13 | 899  | 379 (RR/SRTF) | 2.37x | cold-start: at t=0 only Job 0 visible, CoV=0, picks FCFS, runs Job 0 to completion before shorts arrive |
-| 14 | 4935 | 3383 (SRTF)   | 1.46x | switches to RR (correct call), but RR pays ctx-switch overhead that SRTF avoids |
-| 15 | 1297 | 771 (SRTF)    | 1.68x | same cold-start as s13 |
+| 13 | 899  | 379 (RR/SRTF)  | 2.37x | cold-start: at t=0 only Job 0 visible, CoV=0, picks FCFS, runs Job 0 to completion before the shorts arrive |
+| 14 | 4935 | 3375 (FCFS)    | 1.46x | switches to RR (correct call), but RR pays ctx-switch overhead that FCFS avoids on this i/o pattern |
+| 15 | 1297 | 771 (SJF/SRTF) | 1.68x | same cold-start as s13, only Job 0 visible at t=0 |
 
-All three losses are scenarios where preemption pays off and hybrid
-does not preempt. SRTF wins by 30 to 140% on those.
+All three losses are scenarios where reordering or preemption pays off
+and hybrid is non-preemptive once a job is running.
 
 What the data does support: rule-based hybrid matches the best
 non-preemptive fixed policy on the 12 easy workloads without needing
@@ -254,13 +257,16 @@ policy. SRTF wins overall.
 
 ---
 
-## Known broken (not addressed in this PR)
+## Known broken (still open)
 
-- LOTTERY runJobs hits `.front()` on an empty queue, silent no-op
-- RR `response_avg` is int-underflow garbage (~8.5e8) on most scenarios
-- FCFS hangs on scenario 14 (iterator-invalidation in the i/o unblock loop)
+- LOTTERY runJobs hits `.front()` on an empty queue, silent no-op. Not
+  in any of the figures, just left out
 - Hybrid is non-preemptive once a job runs. Preemptive variant is the
-  obvious next step to close the SRTF gap
+  obvious next step to close the SRTF gap on s13/15
+- RR doesn't actually check arrival time when picking the next job on a
+  quantum boundary, so it can "run" jobs before they exist. Doesn't
+  affect turnaround much but makes the trace events look weird at
+  early time steps
 
 ## Repro
 

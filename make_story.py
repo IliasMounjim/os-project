@@ -33,10 +33,6 @@ def per_scenario(results, scenario):
     sub = results[(results.scenario == scenario) & results.ok].copy()
     if sub.empty:
         return
-    # rr's response_avg has an integer-underflow bug that emits ~8.5e8
-    # on most scenarios. drop those so the y-axis stays readable. fix
-    # belongs in rr.cpp's metric computation, not here.
-    sub.loc[sub.response_avg.abs() > 1e6, "response_avg"] = float("nan")
     # mean across seeds
     means = sub.groupby("policy")[[m[0] for m in METRICS]].mean()
     pols = [p for p in POLICIES if p in means.index]
