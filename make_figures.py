@@ -70,6 +70,35 @@ def gantt(traces, scenario):
     plt.close(fig)
 
 
+def single_metric(results, metric, title, ylabel, fname):
+    # bare grouped bar chart, mean only, no error bars. simpler companion
+    # to comparison() for slides where the error bars are visual noise
+    df = results[results.ok].dropna(subset=[metric])
+    if df.empty:
+        return
+    agg = df.groupby(["scenario", "policy"])[metric].mean().reset_index()
+    pols = [p for p in POLICIES if p in agg.policy.values]
+    scens = sorted(agg.scenario.unique())
+    width = 0.8 / max(len(pols), 1)
+
+    fig, ax = plt.subplots(figsize=(max(10, len(scens) * 1.2), 5))
+    for i, pol in enumerate(pols):
+        col = agg[agg.policy == pol].set_index("scenario").reindex(scens)
+        offsets = [s + (i - len(pols) / 2 + 0.5) * width
+                   for s in range(len(scens))]
+        ax.bar(offsets, col[metric].values, width=width * 0.9,
+               label=pol, color=COLORS[i % len(COLORS)])
+    ax.set_xticks(range(len(scens)))
+    ax.set_xticklabels([f"S{s}" for s in scens])
+    ax.set_xlabel("Scenario")
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.legend(loc="upper left", bbox_to_anchor=(1.0, 1.0), fontsize=8)
+    plt.tight_layout()
+    plt.savefig(FIG / fname, dpi=140, bbox_inches="tight")
+    plt.close(fig)
+
+
 def comparison(results, metric, title, ylabel, fname):
     # mean + std across seeds, plotted as grouped bars with error bars
     df = results[results.ok].dropna(subset=[metric])
@@ -201,6 +230,18 @@ def main():
     comparison(results, "fairness",
                "Fairness by Policy and Scenario",
                "Fairness", "comparison_fairness.png")
+
+    # simple single-metric versions for slides that don't need error bars
+    single_metric(results, "turnaround_avg", "Avg Turnaround Time",
+                  "Turnaround", "turnaround_avg.png")
+    single_metric(results, "response_avg", "Avg Response Time",
+                  "Response", "response_avg.png")
+    single_metric(results, "fairness", "Fairness",
+                  "Fairness", "fairness.png")
+    single_metric(results, "ctx_switches", "Context Switch Cost",
+                  "Ctx switches", "ctx_switches.png")
+    single_metric(results, "starvation", "Starvation Count",
+                  "Starvation", "starvation.png")
 
     coverage(results)
     winners(results)
