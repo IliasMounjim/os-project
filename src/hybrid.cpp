@@ -10,14 +10,17 @@
 //   Rule (first match wins):
 //     avg percentIO of arrived jobs >= 15   -> RR    (i/o heavy)
 //     CoV of remaining bursts < 0.2         -> FCFS  (uniform)
-//     CoV > 1.5                             -> SJF   (high variance)
+//     CoV > 0.5                             -> SJF   (meaningful variance)
 //     otherwise                             -> RR    (default to fair)
 //
-//   CoV = stddev / mean of remaining burst lengths over jobs that have
-//   already arrived. Thresholds are from hybrid_scheduler_notes.md.
+//   CoV = stddev / mean of remaining burst lengths over the running job
+//   plus jobs in the ready queue that have already arrived. Including
+//   the running job matters for the cold-start case where one long job
+//   has the cpu and shorts are waiting.
 //
-//   Re-evaluates the mode every time a job ends, blocks for i/o, or
-//   burns its quantum. Once a job is running it is not preempted.
+//   Re-evaluates every tick. In sjf mode it preempts the running job
+//   if a shorter eligible job is sitting in the ready queue (closes
+//   the SRTF gap on s13 and s15).
 // ------------------------------------------------------------------------
 // Author: Illiasse Mounjim
 // Version: 2026.04.27
@@ -40,7 +43,7 @@ using namespace local;
 unsigned int const hybIoRange   = 100; // max i/o duration in ticks
 int          const hybIoCutoff  = 15;  // avg percentIO above this -> RR mode
 double       const hybCovLow    = 0.2; // CoV below this -> FCFS
-double       const hybCovHigh   = 1.5; // CoV above this -> SJF
+double       const hybCovHigh   = 0.5; // CoV above this -> SJF
 
 enum HybridMode { MODE_FCFS = 0, MODE_SJF = 1, MODE_RR = 2 };
 
@@ -212,6 +215,46 @@ policy::Trace hybridRunJobs(Schedule s, int quantum)
         {
             running.decrementLength();
             slice++;
+        }
+
+        // re-check mode every tick. include the running job so the
+        // ratio of long-vs-short reflects what's actually on cpu, not
+        // just what's waiting. without this, a long job alone at t=0
+        // hides the variance until it finishes.
+        Schedule combined = readyQueue;
+        if (!noRunning) combined.schedule.push_back(running);
+        mode = pickMode(combined, currTime);
+
+        // sjf-mode preemption. if a shorter eligible job is sitting in
+        // the ready queue, swap to it. this is what closes the SRTF gap
+        // on s13 and s15 where a long job arrived alone at t=0
+        if (!noRunning && mode == MODE_SJF && running.getLength() > 0)
+        {
+            int bestIdx = -1;
+            int bestLen = running.getLength();
+            for (int i = 0; i < (int)readyQueue.schedule.size(); i++)
+            {
+                if (readyQueue.schedule[i].getArrival() <= (int)currTime &&
+                    readyQueue.schedule[i].getLength() < bestLen)
+                {
+                    bestLen = readyQueue.schedule[i].getLength();
+                    bestIdx = i;
+                }
+            }
+            if (bestIdx >= 0)
+            {
+                trace.addEvent(policy::Event(running.getStart(), currTime,
+                                             running.getID()));
+                running.setStarted(false);
+                readyQueue.schedule.push_back(running);
+
+                Job next = readyQueue.schedule[bestIdx];
+                readyQueue.schedule.erase(readyQueue.schedule.begin() + bestIdx);
+                next.setStarted(true);
+                next.setStart(currTime);
+                running = next;
+                slice = 0;
+            }
         }
 
         // job finished
