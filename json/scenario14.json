@@ -1,0 +1,50 @@
+{
+    "0" : {
+        "arrival" : 0,
+        "length" : 200,
+        "percentIO" : 40,
+        "priority" : 0
+    },
+    "1" : {
+        "arrival" : 20,
+        "length" : 80,
+        "percentIO" : 50,
+        "priority" : 0
+    },
+    "2" : {
+        "arrival" : 40,
+        "length" : 300,
+        "percentIO" : 30,
+        "priority" : 0
+    },
+    "3" : {
+        "arrival" : 60,
+        "length" : 120,
+        "percentIO" : 45,
+        "priority" : 0
+    },
+    "4" : {
+        "arrival" : 80,
+        "length" : 250,
+        "percentIO" : 35,
+        "priority" : 0
+    },
+    "5" : {
+        "arrival" : 100,
+        "length" : 100,
+        "percentIO" : 50,
+        "priority" : 0
+    },
+    "6" : {
+        "arrival" : 130,
+        "length" : 180,
+        "percentIO" : 40,
+        "priority" : 0
+    },
+    "7" : {
+        "arrival" : 150,
+        "length" : 90,
+        "percentIO" : 45,
+        "priority" : 0
+    }
+}
