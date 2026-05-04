@@ -14,7 +14,7 @@
     "2" : {
         "arrival" : 100,
         "length" : 300,
-        "percentIO" : 0.25,
+        "percentIO" : 25,
         "priority" : 0
     },
     "3" : {
